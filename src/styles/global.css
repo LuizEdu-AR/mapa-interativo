@@ -225,3 +225,11 @@ input, select { padding: 10px 12px; font-size: 12px; }
 /* Lista de localizações: rolagem funcional, sem barra visível */
 .points-list { overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
 .points-list::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+/* Bruxinha 360°: vídeo WebM VP9 com transparência no banner. */
+.hero-witch { display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.hero-witch-video { display: block; width: 100%; height: 100%; object-fit: contain; }
+@media (prefers-reduced-motion: reduce) {
+    .hero-witch-video { display: none; }
+    .hero-witch { background: url('/bruxinha.png') center bottom / contain no-repeat; }
+}

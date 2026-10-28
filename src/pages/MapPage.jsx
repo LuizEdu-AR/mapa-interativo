@@ -53,7 +53,20 @@ export default function MapPage({ progressOnly = false }) {
                 <p>100 bruxinhas estão escondidas pela cidade. Explore o mapa, encontre cada uma e acompanhe sua coleção!</p>
                 <div className="progress-label"><strong>{count}</strong> de 100 coletadas</div>
                 <div className="progress-track"><div style={{ width: `${Math.min(100, count)}%` }} /></div>
-                <small>Restam {Math.max(0, 100 - count)} bruxinhas para completar sua coleção</small></div><img className="hero-witch" src="/bruxinha.png" alt="Bruxinha do evento de Halloween voando na vassoura" />
+                <small>Restam {Math.max(0, 100 - count)} bruxinhas para completar sua coleção</small></div><div className="hero-witch" aria-label="Bruxinha do evento de Halloween girando na vassoura" role="img">
+                    <video
+                        className="hero-witch-video"
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        preload="metadata"
+                        poster="/bruxinha.png"
+                        aria-hidden="true"
+                    >
+                        <source src="/bruxinha_coleta.webm" type="video/webm" />
+                    </video>
+                </div>
             </section>
             <section className="map-section">
                 <div className="section-header">
