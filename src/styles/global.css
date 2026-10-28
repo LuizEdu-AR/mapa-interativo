@@ -216,3 +216,12 @@ input, select { padding: 10px 12px; font-size: 12px; }
 .toast { margin: 0; box-shadow: 0 12px 35px #0008; border: 1px solid #ffffff25; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .toast button { border: 0; background: transparent; color: inherit; display: inline-flex; padding: 4px; }
 @media (max-width: 700px) { .site-footer { justify-content: center; text-align: center; padding: 12px; } .footer-support { justify-content: center; } .toast-stack { top: 14px; right: 16px; } }
+
+/* Pesquisa de usuários na administração */
+.user-search-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 14px 0; }
+.user-search-row input { flex: 1 1 240px; max-width: 380px; min-width: 0; }
+.user-search-row .muted { font-size: 12px; }
+
+/* Lista de localizações: rolagem funcional, sem barra visível */
+.points-list { overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.points-list::-webkit-scrollbar { display: none; width: 0; height: 0; }
