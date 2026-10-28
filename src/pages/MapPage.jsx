@@ -15,6 +15,7 @@ export default function MapPage({ progressOnly = false }) {
     const [selected, setSelected] = useState(null);
     const [filter, setFilter] = useState("all");
     const [status, setStatus] = useState("all");
+    const [region, setRegion] = useState("all");
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
 
@@ -22,11 +23,12 @@ export default function MapPage({ progressOnly = false }) {
     useEffect(() => user ? subscribeProgress(user.uid, setCompleted, () => setError("Não foi possível carregar seu progresso.")) : undefined, [user]);
 
     const filtered = useMemo(() => witches.filter((witch) => {
+        if (region !== "all" && (witch.region || (witch.y < 0.5 ? "north" : "south")) !== region) return false;
         if (filter !== "all" && witch.difficulty !== filter) return false;
         if (status === "done" && !completed.has(witch.id)) return false;
         if (status === "pending" && completed.has(witch.id)) return false;
         return true;
-    }), [witches, completed, filter, status]);
+    }), [witches, completed, filter, status, region]);
     const mapped = useMemo(() => filtered.map((witch) => ({ ...witch, completed: completed.has(witch.id) })), [filtered, completed]);
     const count = witches.filter((witch) => completed.has(witch.id)).length;
     const active = witches.find((witch) => witch.id === selected);
@@ -66,6 +68,11 @@ export default function MapPage({ progressOnly = false }) {
                         <option value="medium">Médio</option>
                         <option value="hard">Difícil</option>
                     </select>
+                    <select aria-label="Filtrar região" value={region} onChange={(event) => setRegion(event.target.value)}>
+                        <option value="all">Norte e Sul</option>
+                        <option value="north">Norte</option>
+                        <option value="south">Sul</option>
+                    </select>
                     <select aria-label="Filtrar conclusão" value={status} onChange={(event) => setStatus(event.target.value)}>
                         <option value="all">Todos os pontos</option>
                         <option value="done">Concluídos</option>
@@ -82,9 +89,8 @@ export default function MapPage({ progressOnly = false }) {
                             {filtered.length === 0 && <p className="muted">Nenhum ponto encontrado. Os administradores podem cadastrar as bruxinhas.</p>}
                             {filtered.map((witch) => (
                                 <button key={witch.id} className={`point-item ${selected === witch.id ? "selected" : ""}`} onClick={() => setSelected(witch.id)}>
-                                    <span className={`difficulty-dot ${witch.difficulty}`} />
-                                    <span><strong>{witch.name?.trim() || "Bruxinha"} #{String(witch.number).padStart(3, "0")}</strong><small>{labels[witch.difficulty]}</small></span>
-                                    {completed.has(witch.id) && <Check size={18} className="done-icon" />}
+                                    <span className={`difficulty-dot ${completed.has(witch.id) ? "completed" : witch.difficulty}`} />
+                                    <span><strong>{witch.name?.trim() || "Bruxinha"} #{String(witch.number).padStart(3, "0")}</strong><small>{(witch.region || (witch.y < 0.5 ? "north" : "south")) === "north" ? "Norte" : "Sul"} · {labels[witch.difficulty]}</small></span>
                                 </button>
                             ))}
                         </div>

@@ -3,7 +3,7 @@ import { Plus, Save, Trash2, X, MapPin } from "lucide-react";
 import GameMap from "../components/Map/GameMap";
 import { subscribeWitches, saveWitch, removeWitch } from "../services/witchService";
 
-const empty = { name: "", number: "", difficulty: "easy", x: null, y: null, images: [] };
+const empty = { name: "", number: "", difficulty: "easy", region: "south", x: null, y: null, images: [] };
 
 export default function AdminPage() {
     const [witches, setWitches] = useState([]);
@@ -20,7 +20,9 @@ export default function AdminPage() {
     useEffect(() => subscribeWitches(setWitches, () => setError("Falha ao carregar pontos.")), []);
 
     function startNew() {
-        setForm({ ...empty, number: String(Array.from({ length: 100 }, (_, index) => index + 1).find((number) => !witches.some((witch) => Number(witch.number) === number)) || 100) });
+        const available = Array.from({ length: 100 }, (_, index) => index + 1).find((number) => !witches.some((witch) => Number(witch.number) === number));
+        if (!available) { setError("Todos os 100 números já estão ocupados."); return; }
+        setForm({ ...empty, number: String(available) });
         setFiles([]);
         setFileError("");
         setEditing(true);
@@ -30,7 +32,7 @@ export default function AdminPage() {
     }
 
     function startEdit(witch) {
-        setForm({ ...witch });
+        setForm({ ...witch, name: witch.name || "Bruxinha", region: witch.region || (witch.y < 0.5 ? "north" : "south") });
         setFiles([]);
         setFileError("");
         setEditing(true);
@@ -110,8 +112,14 @@ export default function AdminPage() {
                 <div className="admin-grid">
                     <form className="panel admin-form" onSubmit={handleSave} onPaste={handlePaste}>
                         <div className="section-header"><h2>Dados do ponto</h2><button type="button" className="icon-button" onClick={() => { setEditing(false); setPlacing(false); }}><X size={20} /></button></div>
-                        <label htmlFor="number">Número (1–100)</label>
-                        <input id="number" type="number" min="1" max="100" value={form.number} onChange={(event) => setForm({ ...form, number: event.target.value })} required disabled={Boolean(form.id)} />
+                        <label htmlFor="name">Nome do local</label>
+                        <input id="name" type="text" maxLength="80" placeholder="Ex.: Duto do Vanilla" value={form.name || ""} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
+                        <p className="muted">Número automático: #{String(form.number).padStart(3, "0")}</p>
+                        <label htmlFor="region">Região</label>
+                        <select id="region" value={form.region || "south"} onChange={(event) => setForm({ ...form, region: event.target.value })}>
+                            <option value="south">Sul</option>
+                            <option value="north">Norte</option>
+                        </select>
                         <label htmlFor="difficulty">Dificuldade</label>
                         <select id="difficulty" value={form.difficulty} onChange={(event) => setForm({ ...form, difficulty: event.target.value })}>
                             <option value="easy">Fácil</option><option value="medium">Médio</option><option value="hard">Difícil</option>
@@ -144,6 +152,7 @@ export default function AdminPage() {
                     <div className="admin-row" key={witch.id}>
                         <span className={`difficulty-dot ${witch.difficulty}`} />
                         <strong>{witch.name?.trim() || "Bruxinha"} #{String(witch.number).padStart(3, "0")}</strong>
+                        <span className="muted">{(witch.region || (witch.y < 0.5 ? "north" : "south")) === "north" ? "Norte" : "Sul"}</span>
                         <span className="muted">{witch.difficulty === "easy" ? "Fácil" : witch.difficulty === "medium" ? "Médio" : "Difícil"}</span>
                         <button className="button secondary" onClick={() => startEdit(witch)}>Editar</button>
                         <button className="icon-button danger" onClick={() => handleDelete(witch)} aria-label="Excluir"><Trash2 size={18} /></button>

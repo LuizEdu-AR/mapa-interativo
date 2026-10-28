@@ -151,3 +151,6 @@ label { display: block; font-size: 13px; font-weight: 700; }
     line-height: 1.5;
 }
 .image-paste-zone:focus-visible { outline: 2px solid #c78af2; outline-offset: 2px; }
+
+/* Marcadores de locais já coletados na lista */
+.difficulty-dot.completed { background: #3B82F6; }
