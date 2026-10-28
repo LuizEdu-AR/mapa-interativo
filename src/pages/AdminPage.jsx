@@ -74,12 +74,15 @@ export default function AdminPage() {
         finally { setRoleBusy(""); }
     }
 
-    function startNew() {
+    const regionOf = (witch) => witch.region || (witch.y < 0.5 ? "north" : "south");
+
+    function startNew(region = "south") {
         const available = nextAvailable(witches);
         if (!available) { setError("Todos os 100 números já estão ocupados."); return; }
-        setForm((previous) => ({ ...empty, number: String(available), region: previous.region || "south", difficulty: previous.difficulty || "easy" }));
+        setForm((previous) => ({ ...empty, number: String(available), region, difficulty: previous.difficulty || "easy" }));
         setFiles([]);
         setFileError("");
+        scrollToEditRef.current = true;
         setEditing(true);
         setPlacing(true);
         setMessage("");
@@ -198,7 +201,7 @@ export default function AdminPage() {
             {tab === "points" ? <>
             <div className="section-header">
                 <div><span className="eyebrow">ÁREA RESTRITA</span><h1>Gerenciar Bruxinhas</h1><p className="muted">{witches.length} de 100 pontos cadastrados</p></div>
-                <button className="button primary" onClick={startNew} disabled={witches.length >= 100}><Plus size={18} /> Adicionar bruxinha</button>
+
             </div>
             {(message || error) && <div className="toast-stack" aria-live="polite">{message && <div className="message success toast" role="status">{message}<button type="button" aria-label="Fechar notificação" onClick={() => setMessage("")}><X size={16}/></button></div>}{error && <div className="message error toast" role="alert">{error}<button type="button" aria-label="Fechar notificação" onClick={() => setError("")}><X size={16}/></button></div>}</div>}
             {editing && (
@@ -239,18 +242,41 @@ export default function AdminPage() {
                     <div className="admin-map"><GameMap points={witches} selectionMode={placing} onMapSelect={(point) => { setForm((previous) => ({ ...previous, ...point })); setPlacing(false); }} /></div>
                 </div>
             )}
-            <section className="panel">
-                <h2>Pontos cadastrados</h2>
-                {!witches.length && <p className="muted">Nenhum ponto cadastrado ainda.</p>}
-                <div className="admin-table-scroll"><table className="admin-table"><thead><tr><th>Nome do ponto</th><th>Região</th><th>Dificuldade</th><th>Ações</th></tr></thead><tbody>{witches.map((witch) => (
-                    <tr key={witch.id}>
-                        <td><span className={`difficulty-dot ${witch.difficulty}`} /> <strong>{witch.name?.trim() || "Bruxinha"} #{String(witch.number).padStart(3, "0")}</strong></td>
-                        <td>{(witch.region || (witch.y < 0.5 ? "north" : "south")) === "north" ? "Norte" : "Sul"}</td>
-                        <td>{witch.difficulty === "easy" ? "Fácil" : witch.difficulty === "medium" ? "Médio" : "Difícil"}</td>
-                        <td><div className="table-actions"><button className="icon-button" title="Editar" aria-label={`Editar ${witch.name}`} onClick={() => startEdit(witch)}><Pencil size={16} /></button><button className="icon-button danger" title="Excluir" aria-label={`Excluir ${witch.name}`} onClick={() => setConfirmDelete(witch)}><Trash2 size={16} /></button></div></td>
-                    </tr>
-                ))}</tbody></table></div>
-            </section>
+            <div className="region-manager-list">
+                {["south", "north"].map((region) => {
+                    const regionWitches = witches.filter((witch) => regionOf(witch) === region);
+                    const label = region === "south" ? "Sul" : "Norte";
+                    return (
+                        <section className="panel region-manager-panel" key={region} aria-label={`Bruxinhas do ${label}`}>
+                            <div className="region-manager-header">
+                                <div>
+                                    <h2>Bruxinhas do {label}</h2>
+                                    <p className="muted">{regionWitches.length}/50 bruxinhas catalogadas nesta região</p>
+                                </div>
+                                <button className="button primary" type="button" onClick={() => startNew(region)} disabled={witches.length >= 100 || regionWitches.length >= 50}>
+                                    <Plus size={18} /> Adicionar bruxinha
+                                </button>
+                            </div>
+                            {regionWitches.length === 0 ? (
+                                <p className="muted">Nenhuma bruxinha cadastrada nesta região.</p>
+                            ) : (
+                                <div className="admin-table-scroll">
+                                    <table className="admin-table region-points-table">
+                                        <thead><tr><th>Nome do ponto</th><th>Dificuldade</th><th><span className="visually-hidden">Editar ou excluir</span></th></tr></thead>
+                                        <tbody>{regionWitches.map((witch) => (
+                                            <tr key={witch.id}>
+                                                <td><span className={`difficulty-dot ${witch.difficulty}`} /> <strong>{witch.name?.trim() || "Bruxinha"} #{String(witch.number).padStart(3, "0")}</strong></td>
+                                                <td>{witch.difficulty === "easy" ? "Fácil" : witch.difficulty === "medium" ? "Médio" : "Difícil"}</td>
+                                                <td><div className="table-actions"><button className="icon-button" title="Editar" aria-label={`Editar ${witch.name}`} onClick={() => startEdit(witch)}><Pencil size={16} /></button><button className="icon-button danger" title="Excluir" aria-label={`Excluir ${witch.name}`} onClick={() => setConfirmDelete(witch)}><Trash2 size={16} /></button></div></td>
+                                            </tr>
+                                        ))}</tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </section>
+                    );
+                })}
+            </div>
             </> : <section className="panel"><div className="section-header"><div><h2>Usuários cadastrados</h2><p className="muted">Somente o proprietário pode alterar permissões.</p></div><button className="button secondary" onClick={loadUsers} disabled={loadingUsers}>{loadingUsers ? "Carregando..." : "Atualizar lista"}</button></div><div className="user-search-row"><label className="visually-hidden" htmlFor="user-search">Pesquisar usuários por nome ou ID</label><input id="user-search" type="search" placeholder="Pesquisar por nome ou ID..." value={userSearch} onChange={(event) => setUserSearch(event.target.value)} autoComplete="off" /><span className="muted" aria-live="polite">{visibleUsers.length} de {users.length} usuários</span></div><div className="admin-table-scroll"><table className="admin-table"><thead><tr><th>Nome</th><th>ID</th><th>Permissão</th><th>Ação</th></tr></thead><tbody>{visibleUsers.map((item) => <tr key={item.uid}><td>{item.name || "Sem nome"}</td><td>#{item.playerId}</td><td>{item.role === "owner" ? "Proprietário" : item.role === "admin" ? "Administrador" : "Jogador"}</td><td>{item.role === "owner" ? "Protegido" : <button className="button secondary" disabled={Boolean(roleBusy)} onClick={() => changeRole(item.uid, item.role === "admin" ? "player" : "admin")}>{roleBusy === item.uid ? "Salvando..." : item.role === "admin" ? "Remover admin" : "Tornar admin"}</button>}</td></tr>)}</tbody></table></div>{!users.length && !loadingUsers && <p className="muted">Nenhum usuário carregado.</p>}{users.length > 0 && visibleUsers.length === 0 && <p className="muted">Nenhum usuário encontrado.</p>}</section>}
             {confirmDelete && <div className="modal-backdrop" onClick={() => { if (!deleting) setConfirmDelete(null); }}><section className="modal confirm-modal" role="dialog" aria-modal="true" aria-label="Confirmar exclusão" onClick={(event) => event.stopPropagation()}><h2>Excluir ponto?</h2><p>Deseja excluir {confirmDelete.name} #{String(confirmDelete.number).padStart(3, "0")}? Esta ação não pode ser desfeita.</p><div className="confirm-actions"><button className="button secondary" disabled={deleting} onClick={() => setConfirmDelete(null)}>Cancelar</button><button className="button danger-button" disabled={deleting} onClick={() => handleDelete(confirmDelete)}>{deleting ? "Excluindo..." : "Excluir ponto"}</button></div></section></div>}
         </main>
