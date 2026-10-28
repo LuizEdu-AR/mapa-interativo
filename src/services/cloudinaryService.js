@@ -13,24 +13,45 @@ async function authorizedRequest(url, body) {
         body: JSON.stringify(body)
     });
     const result = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(result.error || "Falha na operação com imagens.");
+    if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+            throw new Error(result.error || "Sem permissão administrativa. Faça login novamente.");
+        }
+        throw new Error(result.error || `Falha na operação com imagens (HTTP ${response.status}).`);
+    }
     return result;
 }
 
 export async function uploadWitchImage(pointId, file) {
-    if (!ACCEPTED.includes(file.type) || file.size > MAX_BYTES || file.size === 0) {
+    if (!file || !ACCEPTED.includes(file.type) || file.size > MAX_BYTES || file.size === 0) {
         throw new Error("Envie uma imagem JPG, PNG ou WebP com até 5 MB.");
     }
-    const data = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(new Error("Não foi possível ler a imagem."));
-        reader.readAsDataURL(file);
-    });
-    return authorizedRequest("/api/cloudinary-upload", { pointId, data });
+    const id = String(pointId);
+    const signed = await authorizedRequest("/api/cloudinary-sign", { pointId: id });
+    const form = new FormData();
+    form.append("file", file);
+    for (const key of ["apiKey", "timestamp", "folder", "public_id", "overwrite", "signature"]) {
+        form.append(key === "apiKey" ? "api_key" : key, String(signed[key]));
+    }
+    let response;
+    try {
+        response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(signed.cloudName)}/image/upload`, {
+            method: "POST",
+            body: form
+        });
+    } catch {
+        throw new Error("Não foi possível conectar ao Cloudinary. Verifique sua conexão.");
+    }
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        const detail = result.error?.message || `HTTP ${response.status}`;
+        throw new Error(`Falha no upload para o Cloudinary: ${detail}`);
+    }
+    if (!result.secure_url || !result.public_id) throw new Error("O Cloudinary não retornou os dados da imagem.");
+    return { url: result.secure_url, publicId: result.public_id, path: result.public_id };
 }
 
 export async function deleteWitchImage(image) {
-    if (!image?.publicId) return; // imagens legadas do Firebase Storage não são removidas aqui
+    if (!image?.publicId) return;
     return authorizedRequest("/api/cloudinary-delete", { publicId: image.publicId });
 }
