@@ -14,6 +14,7 @@ export default function AdminPage() {
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [roleBusy, setRoleBusy] = useState("");
     const [confirmDelete, setConfirmDelete] = useState(null);
+    const [deleting, setDeleting] = useState(false);
     const [witches, setWitches] = useState([]);
     const [form, setForm] = useState(empty);
     const [files, setFiles] = useState([]);
@@ -146,13 +147,29 @@ export default function AdminPage() {
     }
 
     async function handleDelete(witch) {
+        if (deleting) return;
+        setDeleting(true);
         setError("");
         try {
             await removeWitch(witch);
             setConfirmDelete(null);
             setMessage("Ponto excluído.");
         } catch (caught) { setError(caught.message || "Não foi possível excluir."); }
+        finally { setDeleting(false); }
     }
+
+    useEffect(() => {
+        if (!confirmDelete) return;
+        const onKeyDown = (event) => { if (event.key === "Escape" && !deleting) setConfirmDelete(null); };
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [confirmDelete, deleting]);
+
+    useEffect(() => {
+        if (!message && !error) return;
+        const timeout = window.setTimeout(() => { setMessage(""); setError(""); }, 5000);
+        return () => window.clearTimeout(timeout);
+    }, [message, error]);
 
     return (
         <main className="page-content">
@@ -162,8 +179,7 @@ export default function AdminPage() {
                 <div><span className="eyebrow">ÁREA RESTRITA</span><h1>Gerenciar Bruxinhas</h1><p className="muted">{witches.length} de 100 pontos cadastrados</p></div>
                 <button className="button primary" onClick={startNew} disabled={witches.length >= 100}><Plus size={18} /> Adicionar bruxinha</button>
             </div>
-            {message && <div className="message success">{message}</div>}
-            {error && <div className="message error">{error}</div>}
+            {(message || error) && <div className="toast-stack" aria-live="polite">{message && <div className="message success toast" role="status">{message}<button type="button" aria-label="Fechar notificação" onClick={() => setMessage("")}><X size={16}/></button></div>}{error && <div className="message error toast" role="alert">{error}<button type="button" aria-label="Fechar notificação" onClick={() => setError("")}><X size={16}/></button></div>}</div>}
             {editing && (
                 <div className="admin-grid">
                     <form className="panel admin-form" onSubmit={handleSave} onPaste={handlePaste}>
@@ -215,7 +231,7 @@ export default function AdminPage() {
                 ))}</tbody></table></div>
             </section>
             </> : <section className="panel"><div className="section-header"><div><h2>Usuários cadastrados</h2><p className="muted">Somente o proprietário pode alterar permissões.</p></div><button className="button secondary" onClick={loadUsers} disabled={loadingUsers}>{loadingUsers ? "Carregando..." : "Atualizar lista"}</button></div><div className="admin-table-scroll"><table className="admin-table"><thead><tr><th>Nome</th><th>ID</th><th>Permissão</th><th>Ação</th></tr></thead><tbody>{users.map((item) => <tr key={item.uid}><td>{item.name || "Sem nome"}</td><td>#{item.playerId}</td><td>{item.role === "owner" ? "Proprietário" : item.role === "admin" ? "Administrador" : "Jogador"}</td><td>{item.role === "owner" ? "Protegido" : <button className="button secondary" disabled={Boolean(roleBusy)} onClick={() => changeRole(item.uid, item.role === "admin" ? "player" : "admin")}>{roleBusy === item.uid ? "Salvando..." : item.role === "admin" ? "Remover admin" : "Tornar admin"}</button>}</td></tr>)}</tbody></table></div>{!users.length && !loadingUsers && <p className="muted">Nenhum usuário carregado.</p>}</section>}
-            {confirmDelete && <div className="modal-backdrop" onClick={() => setConfirmDelete(null)}><section className="modal confirm-modal" role="dialog" aria-modal="true" aria-label="Confirmar exclusão" onClick={(event) => event.stopPropagation()}><h2>Excluir ponto?</h2><p>Deseja excluir {confirmDelete.name} #{String(confirmDelete.number).padStart(3, "0")}? Esta ação não pode ser desfeita.</p><div className="confirm-actions"><button className="button secondary" onClick={() => setConfirmDelete(null)}>Cancelar</button><button className="button danger-button" onClick={() => handleDelete(confirmDelete)}>Excluir ponto</button></div></section></div>}
+            {confirmDelete && <div className="modal-backdrop" onClick={() => { if (!deleting) setConfirmDelete(null); }}><section className="modal confirm-modal" role="dialog" aria-modal="true" aria-label="Confirmar exclusão" onClick={(event) => event.stopPropagation()}><h2>Excluir ponto?</h2><p>Deseja excluir {confirmDelete.name} #{String(confirmDelete.number).padStart(3, "0")}? Esta ação não pode ser desfeita.</p><div className="confirm-actions"><button className="button secondary" disabled={deleting} onClick={() => setConfirmDelete(null)}>Cancelar</button><button className="button danger-button" disabled={deleting} onClick={() => handleDelete(confirmDelete)}>{deleting ? "Excluindo..." : "Excluir ponto"}</button></div></section></div>}
         </main>
     );
 }
