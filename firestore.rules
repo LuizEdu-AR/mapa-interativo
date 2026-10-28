@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+    function admin() {
+      return signedIn() && request.auth.token.role in ['admin', 'owner'];
+    }
+    function owner() {
+      return signedIn() && request.auth.token.role == 'owner';
+    }
+    function validWitch() {
+      return request.resource.data.keys().hasOnly(['number', 'difficulty', 'x', 'y', 'images', 'updatedAt'])
+        && request.resource.data.number is int
+        && request.resource.data.number >= 1
+        && request.resource.data.number <= 100
+        && request.resource.data.difficulty in ['easy', 'medium', 'hard']
+        && request.resource.data.x is number
+        && request.resource.data.y is number
+        && request.resource.data.x >= 0
+        && request.resource.data.x <= 1
+        && request.resource.data.y >= 0
+        && request.resource.data.y <= 1
+        && request.resource.data.images is list
+        && request.resource.data.images.size() <= 2;
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || admin());
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['playerId', 'name', 'role', 'createdAt'])
+        && request.resource.data.role == 'player'
+        && request.resource.data.playerId is string
+        && request.resource.data.playerId.matches('^[0-9]{1,12}$')
+        && request.resource.data.playerId != '194'
+        && request.auth.token.email == request.resource.data.playerId + '@players.caca-bruxinhas.invalid'
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.name.size() <= 32;
+      allow update: if false;
+      allow delete: if false;
+
+      match /completedWitches/{witchId} {
+        allow read: if signedIn() && request.auth.uid == uid;
+        allow create, update: if signedIn()
+          && request.auth.uid == uid
+          && exists(/databases/$(database)/documents/witches/$(witchId))
+          && request.resource.data.keys().hasOnly(['completedAt']);
+        allow delete: if signedIn() && request.auth.uid == uid;
+      }
+    }
+
+    match /witches/{witchId} {
+      allow read: if signedIn();
+      allow create, update: if admin()
+        && validWitch()
+        && witchId == (request.resource.data.number < 10 ? '00' : request.resource.data.number < 100 ? '0' : '') + string(request.resource.data.number);
+      allow delete: if admin();
+    }
+  }
+}

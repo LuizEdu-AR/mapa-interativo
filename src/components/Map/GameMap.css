@@ -1,0 +1,38 @@
+.game-map {
+    width: 100%;
+    height: 100%;
+    min-height: 480px;
+    background: #063846;
+    border-radius: 16px;
+    z-index: 0;
+}
+
+.witch-marker-container {
+    background: transparent;
+    border: 0;
+}
+
+.witch-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--marker-color);
+    border: 3px solid #ffffff;
+    box-shadow: 0 2px 14px #000b;
+    color: #101018;
+    font-size: 16px;
+    font-weight: 800;
+    transition: transform 0.2s;
+}
+
+.witch-marker:hover {
+    transform: scale(1.22);
+}
+
+.witch-marker.is-completed {
+    border-color: #e7d4ff;
+    box-shadow: 0 0 0 4px #aa7be066;
+}
