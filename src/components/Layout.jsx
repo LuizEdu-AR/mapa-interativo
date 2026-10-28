@@ -23,7 +23,7 @@ export default function Layout() {
             <div className="main-column">
                 <header className="topbar"><strong>CAÇA ÀS BRUXINHAS</strong><span>EVENTO DE HALLOWEEN</span></header>
                 <div className="main-content"><Outlet /></div>
-                <footer className="site-footer"><span>© 2026 — Desenvolvido por <strong>Luiz Eduardo “LORE N | CHICO”</strong></span><span className="footer-support">Com apoio da fraternidade <strong>Villains</strong><img src="/villains-logo.png" alt="Logo da fraternidade Villains" /></span></footer>
+                <footer className="site-footer"><span>© 2026 — Desenvolvido por <strong>Luiz Eduardo “LORE N | CHICO”</strong></span><span className="footer-support">Com apoio da fraternidade<img src="/villains-logo.png" alt="Logo da fraternidade Villains" /></span></footer>
             </div>
             {confirmLogout && <div className="modal-backdrop" onClick={() => setConfirmLogout(false)}><section className="modal confirm-modal" role="dialog" aria-modal="true" aria-label="Confirmar saída" onClick={(event) => event.stopPropagation()}><h2>Sair da conta?</h2><p>Seu progresso continuará salvo na sua conta.</p><div className="confirm-actions"><button className="button secondary" onClick={() => setConfirmLogout(false)}>Cancelar</button><button className="button primary" onClick={logoutPlayer}>Sair da conta</button></div></section></div>}
         </div>
