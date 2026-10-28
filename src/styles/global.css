@@ -233,3 +233,14 @@ input, select { padding: 10px 12px; font-size: 12px; }
     .hero-witch-video { display: none; }
     .hero-witch { background: url('/bruxinha.png') center bottom / contain no-repeat; }
 }
+
+/* Footer: créditos | Rua 2 | apoio Villains */
+.site-footer { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px; }
+.footer-credit { justify-self: start; }
+.footer-city-logo { display: block; width: 44px; height: 44px; object-fit: contain; justify-self: center; }
+.footer-support { justify-self: end; }
+@media (max-width: 700px) {
+    .site-footer { grid-template-columns: 1fr; justify-items: center; gap: 7px; }
+    .footer-credit, .footer-support, .footer-city-logo { justify-self: center; }
+    .footer-city-logo { width: 40px; height: 40px; }
+}
