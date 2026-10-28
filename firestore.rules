@@ -11,7 +11,11 @@ service cloud.firestore {
       return signedIn() && request.auth.token.role == 'owner';
     }
     function validWitch() {
-      return request.resource.data.keys().hasOnly(['number', 'difficulty', 'x', 'y', 'images', 'updatedAt'])
+      return request.resource.data.keys().hasOnly(['number', 'name', 'region', 'difficulty', 'x', 'y', 'images', 'updatedAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.region in ['north', 'south']
         && request.resource.data.number is int
         && request.resource.data.number >= 1
         && request.resource.data.number <= 100

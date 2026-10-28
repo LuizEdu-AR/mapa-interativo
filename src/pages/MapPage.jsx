@@ -47,13 +47,13 @@ export default function MapPage({ progressOnly = false }) {
 
     return (
         <main className="page-content">
-            <section className="hero-card">
+            <section className="hero-card"><div className="hero-copy">
                 <span className="eyebrow">EVENTO DE HALLOWEEN</span>
                 <h1>Caça às Bruxinhas</h1>
                 <p>100 bruxinhas estão escondidas pela cidade. Explore o mapa, encontre cada uma e acompanhe sua coleção!</p>
                 <div className="progress-label"><strong>{count}</strong> de 100 coletadas</div>
                 <div className="progress-track"><div style={{ width: `${Math.min(100, count)}%` }} /></div>
-                <small>Restam {Math.max(0, 100 - count)} bruxinhas para completar sua coleção</small>
+                <small>Restam {Math.max(0, 100 - count)} bruxinhas para completar sua coleção</small></div><img className="hero-witch" src="/bruxinha.png" alt="Bruxinha do evento de Halloween voando na vassoura" />
             </section>
             <section className="map-section">
                 <div className="section-header">
