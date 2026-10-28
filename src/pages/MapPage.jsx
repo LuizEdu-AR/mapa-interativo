@@ -32,11 +32,10 @@ export default function MapPage() {
     const mapped = useMemo(() => filtered.map((witch) => ({ ...witch, completed: completed.has(witch.id) })), [filtered, completed]);
     const count = witches.filter((witch) => completed.has(witch.id)).length;
     const regionalCounts = useMemo(() => witches.reduce((totals, witch) => {
-        if (!completed.has(witch.id)) return totals;
         const region = witch.region || (witch.y < 0.5 ? "north" : "south");
         if (region === "north" || region === "south") totals[region] += 1;
         return totals;
-    }, { north: 0, south: 0 }), [witches, completed]);
+    }, { north: 0, south: 0 }), [witches]);
     const active = witches.find((witch) => witch.id === selected);
 
     async function handleToggle() {
@@ -60,16 +59,7 @@ export default function MapPage() {
                 <div className="progress-label"><strong>{count}</strong> de 100 coletadas</div>
                 <div className="progress-track"><div style={{ width: `${Math.min(100, count)}%` }} /></div>
                 <small>Restam {Math.max(0, 100 - count)} bruxinhas para completar sua coleção</small>
-                <div className="region-progress-grid" aria-label="Progresso por região">
-                    {[{ key: "north", label: "Bruxinhas do Norte" }, { key: "south", label: "Bruxinhas do Sul" }].map(({ key, label }) => (
-                        <div className="region-progress-card" key={key}>
-                            <div className="region-progress-heading"><span>{label}</span><strong>{regionalCounts[key]}/50</strong></div>
-                            <div className="region-progress-track" role="progressbar" aria-label={label} aria-valuenow={regionalCounts[key]} aria-valuemin={0} aria-valuemax={50}>
-                                <div style={{ width: `${Math.min(100, regionalCounts[key] * 2)}%` }} />
-                            </div>
-                        </div>
-                    ))}
-                </div></div><div className="hero-witch" aria-label="Bruxinha do evento de Halloween girando na vassoura" role="img">
+                </div><div className="hero-witch" aria-label="Bruxinha do evento de Halloween girando na vassoura" role="img">
                     <video
                         className="hero-witch-video"
                         autoPlay
@@ -82,6 +72,18 @@ export default function MapPage() {
                     >
                         <source src="/bruxinha_coleta.webm" type="video/webm" />
                     </video>
+                </div>
+            </section>
+            <section className="region-catalog-section" aria-label="Bruxinhas catalogadas por região">
+                <div className="region-progress-grid" aria-label="Catalogação por região">
+                    {[{ key: "north", label: "Bruxinhas do Norte catalogadas" }, { key: "south", label: "Bruxinhas do Sul catalogadas" }].map(({ key, label }) => (
+                        <div className="region-progress-card" key={key}>
+                            <div className="region-progress-heading"><span>{label}</span><strong>{regionalCounts[key]}/50</strong></div>
+                            <div className="region-progress-track" role="progressbar" aria-label={label} aria-valuenow={regionalCounts[key]} aria-valuemin={0} aria-valuemax={50}>
+                                <div style={{ width: `${Math.min(100, regionalCounts[key] * 2)}%` }} />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </section>
             <section className="map-section">
