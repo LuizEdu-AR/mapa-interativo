@@ -138,3 +138,16 @@ label { display: block; font-size: 13px; font-weight: 700; }
     .result-count { margin-left: 0; }
     .admin-row { flex-wrap: wrap; }
 }
+
+/* Área de colagem de prints no cadastro administrativo. */
+.image-paste-zone {
+    margin-top: 10px;
+    padding: 16px;
+    border: 1px dashed #a76acb;
+    border-radius: 10px;
+    background: #1c092b;
+    color: #e8d8f5;
+    cursor: text;
+    line-height: 1.5;
+}
+.image-paste-zone:focus-visible { outline: 2px solid #c78af2; outline-offset: 2px; }

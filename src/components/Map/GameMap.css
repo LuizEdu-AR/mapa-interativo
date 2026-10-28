@@ -16,12 +16,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     background: var(--marker-color);
-    border: 3px solid #ffffff;
-    box-shadow: 0 2px 14px #000b;
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 6px #000b;
     color: #1c092b;
     font-size: 16px;
     font-weight: 800;
@@ -33,8 +33,8 @@
 }
 
 .witch-marker.is-completed {
-    border-color: #e7d4ff;
-    box-shadow: 0 0 0 4px #aa7be066;
+    background: #3B82F6;
+    border-color: #ffffff;
 }
 
 /* Fundo externo ao mapa e aos tiles, alinhado ao tema Halloween. */

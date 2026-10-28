@@ -81,9 +81,9 @@ export default function GameMap({ points = [], selectedId, onMapSelect, selectio
             if (![point.x, point.y].every(Number.isFinite)) return;
             const icon = L.divIcon({
                 className: "witch-marker-container",
-                html: `<span class="witch-marker ${point.completed ? "is-completed" : ""}" style="--marker-color:${colors[point.difficulty] || colors.easy}">${point.completed ? "✓" : ""}</span>`,
-                iconSize: [28, 28],
-                iconAnchor: [14, 14]
+                html: `<span class="witch-marker ${point.completed ? "is-completed" : ""}" style="--marker-color:${point.completed ? "#3B82F6" : (colors[point.difficulty] || colors.easy)}"></span>`,
+                iconSize: [14, 14],
+                iconAnchor: [7, 7]
             });
             L.marker(normalizedToLatLng(point.x, point.y), { icon })
                 .on("click", () => handlersRef.current.onPointClick?.(point))
