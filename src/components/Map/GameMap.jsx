@@ -46,7 +46,7 @@ export default function GameMap({ points = [], selectedId, onMapSelect, selectio
             maxBoundsViscosity: 1,
             attributionControl: false
         });
-        L.tileLayer("/maps/tiles/{z}/{x}/{y}.webp", {
+        L.tileLayer("/maps/tiles/{z}/{x}/{y}.webp?v=roxo-fundo-2", {
             tileSize: TILE_SIZE,
             minNativeZoom: 0,
             maxNativeZoom: 2,
