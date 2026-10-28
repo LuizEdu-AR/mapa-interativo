@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 
 const labels = { easy: "Fácil", medium: "Médio", hard: "Difícil" };
 
-export default function MapPage({ progressOnly = false }) {
+export default function MapPage() {
     const { user, isAdmin } = useAuth();
     const [witches, setWitches] = useState([]);
     const [completed, setCompleted] = useState(new Set());
@@ -31,6 +31,12 @@ export default function MapPage({ progressOnly = false }) {
     }), [witches, completed, filter, status, region]);
     const mapped = useMemo(() => filtered.map((witch) => ({ ...witch, completed: completed.has(witch.id) })), [filtered, completed]);
     const count = witches.filter((witch) => completed.has(witch.id)).length;
+    const regionalCounts = useMemo(() => witches.reduce((totals, witch) => {
+        if (!completed.has(witch.id)) return totals;
+        const region = witch.region || (witch.y < 0.5 ? "north" : "south");
+        if (region === "north" || region === "south") totals[region] += 1;
+        return totals;
+    }, { north: 0, south: 0 }), [witches, completed]);
     const active = witches.find((witch) => witch.id === selected);
 
     async function handleToggle() {
@@ -53,7 +59,17 @@ export default function MapPage({ progressOnly = false }) {
                 <p>100 bruxinhas estão escondidas pela cidade. Explore o mapa, encontre cada uma e acompanhe sua coleção!</p>
                 <div className="progress-label"><strong>{count}</strong> de 100 coletadas</div>
                 <div className="progress-track"><div style={{ width: `${Math.min(100, count)}%` }} /></div>
-                <small>Restam {Math.max(0, 100 - count)} bruxinhas para completar sua coleção</small></div><div className="hero-witch" aria-label="Bruxinha do evento de Halloween girando na vassoura" role="img">
+                <small>Restam {Math.max(0, 100 - count)} bruxinhas para completar sua coleção</small>
+                <div className="region-progress-grid" aria-label="Progresso por região">
+                    {[{ key: "north", label: "Bruxinhas do Norte" }, { key: "south", label: "Bruxinhas do Sul" }].map(({ key, label }) => (
+                        <div className="region-progress-card" key={key}>
+                            <div className="region-progress-heading"><span>{label}</span><strong>{regionalCounts[key]}/50</strong></div>
+                            <div className="region-progress-track" role="progressbar" aria-label={label} aria-valuenow={regionalCounts[key]} aria-valuemin={0} aria-valuemax={50}>
+                                <div style={{ width: `${Math.min(100, regionalCounts[key] * 2)}%` }} />
+                            </div>
+                        </div>
+                    ))}
+                </div></div><div className="hero-witch" aria-label="Bruxinha do evento de Halloween girando na vassoura" role="img">
                     <video
                         className="hero-witch-video"
                         autoPlay
@@ -70,7 +86,7 @@ export default function MapPage({ progressOnly = false }) {
             </section>
             <section className="map-section">
                 <div className="section-header">
-                    <div><span className="eyebrow">EXPLORE A CIDADE</span><h2>{progressOnly ? "Meu Progresso" : "Mapa das Bruxinhas"}</h2></div>
+                    <div><span className="eyebrow">EXPLORE A CIDADE</span><h2>Mapa das Bruxinhas</h2></div>
                     {isAdmin && <Link className="button primary" to="/admin"><Plus size={17} /> Gerenciar pontos</Link>}
                 </div>
                 <div className="filters">

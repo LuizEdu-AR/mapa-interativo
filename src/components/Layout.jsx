@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { Map, ChartNoAxesColumn, Shield, LogOut, Ghost } from "lucide-react";
+import { Map, Shield, LogOut, Ghost } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { logoutPlayer } from "../services/authService";
 
@@ -15,7 +15,6 @@ export default function Layout() {
                 <div className="user-box"><strong>{profile?.name || "Jogador"}</strong><small>#{profile?.playerId || "—"}</small></div>
                 <nav className="nav-links" aria-label="Navegação principal">
                     <NavLink to="/mapa"><Map size={19} /> Mapa das Bruxinhas</NavLink>
-                    <NavLink to="/progresso"><ChartNoAxesColumn size={19} /> Meu Progresso</NavLink>
                     {isAdmin && <NavLink to="/admin"><Shield size={19} /> Administração</NavLink>}
                 </nav>
                 <button className="logout" onClick={() => setConfirmLogout(true)}><LogOut size={18} /> Sair da conta</button>

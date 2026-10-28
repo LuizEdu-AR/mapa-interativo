@@ -27,7 +27,7 @@ export default function App() {
             <Route path="/cadastro" element={<Guest><AuthPage register /></Guest>} />
             <Route element={<Protected><Layout /></Protected>}>
                 <Route path="/mapa" element={<MapPage />} />
-                <Route path="/progresso" element={<MapPage progressOnly />} />
+                <Route path="/progresso" element={<Navigate to="/mapa" replace />} />
                 <Route path="/admin" element={<Protected admin><AdminPage /></Protected>} />
             </Route>
             <Route path="*" element={<Navigate to="/mapa" replace />} />

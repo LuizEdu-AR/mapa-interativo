@@ -25,6 +25,8 @@ export default function AdminPage() {
     const [form, setForm] = useState(empty);
     const [files, setFiles] = useState([]);
     const pasteAreaRef = useRef(null);
+    const editSectionRef = useRef(null);
+    const scrollToEditRef = useRef(false);
     const [fileError, setFileError] = useState("");
     const [editing, setEditing] = useState(false);
     const [placing, setPlacing] = useState(false);
@@ -84,7 +86,20 @@ export default function AdminPage() {
         setError("");
     }
 
+    useEffect(() => {
+        if (!editing || !scrollToEditRef.current) return;
+        scrollToEditRef.current = false;
+        const frame = window.requestAnimationFrame(() => {
+            const target = editSectionRef.current;
+            if (!target) return;
+            const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+        });
+        return () => window.cancelAnimationFrame(frame);
+    }, [editing, form.id]);
+
     function startEdit(witch) {
+        scrollToEditRef.current = true;
         setForm({ ...witch, name: witch.name || "Bruxinha", region: witch.region || (witch.y < 0.5 ? "north" : "south") });
         setFiles([]);
         setFileError("");
@@ -187,7 +202,7 @@ export default function AdminPage() {
             </div>
             {(message || error) && <div className="toast-stack" aria-live="polite">{message && <div className="message success toast" role="status">{message}<button type="button" aria-label="Fechar notificação" onClick={() => setMessage("")}><X size={16}/></button></div>}{error && <div className="message error toast" role="alert">{error}<button type="button" aria-label="Fechar notificação" onClick={() => setError("")}><X size={16}/></button></div>}</div>}
             {editing && (
-                <div className="admin-grid">
+                <div className="admin-grid" ref={editSectionRef}>
                     <form className="panel admin-form" onSubmit={handleSave} onPaste={handlePaste}>
                         <div className="section-header"><h2>Dados do ponto</h2><button type="button" className="icon-button" onClick={() => { setEditing(false); setPlacing(false); }}><X size={20} /></button></div>
                         <label htmlFor="name">Nome do local</label>
