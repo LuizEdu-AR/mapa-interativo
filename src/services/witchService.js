@@ -10,9 +10,10 @@ export function subscribeWitches(callback, onError) {
     }, onError);
 }
 
-export async function saveWitch({ number, difficulty, x, y, files = [], existingImages = [] }) {
+export async function saveWitch({ number, name, difficulty, x, y, files = [], existingImages = [] }) {
     const n = Number(number);
     if (!Number.isInteger(n) || n < 1 || n > 100) throw new Error("Escolha um número de 1 a 100.");
+    if (!name || !name.trim() || name.trim().length > 80) throw new Error("Informe o nome do local (até 80 caracteres).");
     if (!["easy", "medium", "hard"].includes(difficulty)) throw new Error("Dificuldade inválida.");
     if (![x, y].every((value) => typeof value === "number" && value >= 0 && value <= 1)) throw new Error("Selecione uma posição válida no mapa.");
     if (existingImages.length + files.length > 2) throw new Error("São permitidas no máximo duas imagens.");
@@ -27,7 +28,7 @@ export async function saveWitch({ number, difficulty, x, y, files = [], existing
             uploaded.push(image);
         }
         const images = [...existingImages, ...uploaded];
-        await setDoc(pointRef, { number: n, difficulty, x, y, images, updatedAt: serverTimestamp() });
+        await setDoc(pointRef, { number: n, name: name.trim(), difficulty, x, y, images, updatedAt: serverTimestamp() });
         // A exclusão das imagens removidas é posterior à gravação para não perder dados em caso de erro.
         const retained = new Set(images.map((image) => image.publicId || image.path));
         await Promise.allSettled(previousImages.filter((image) => !retained.has(image.publicId || image.path)).map(deleteWitchImage));

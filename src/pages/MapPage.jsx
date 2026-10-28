@@ -83,7 +83,7 @@ export default function MapPage({ progressOnly = false }) {
                             {filtered.map((witch) => (
                                 <button key={witch.id} className={`point-item ${selected === witch.id ? "selected" : ""}`} onClick={() => setSelected(witch.id)}>
                                     <span className={`difficulty-dot ${witch.difficulty}`} />
-                                    <span><strong>Bruxinha #{String(witch.number).padStart(3, "0")}</strong><small>{labels[witch.difficulty]}</small></span>
+                                    <span><strong>{witch.name?.trim() || "Bruxinha"} #{String(witch.number).padStart(3, "0")}</strong><small>{labels[witch.difficulty]}</small></span>
                                     {completed.has(witch.id) && <Check size={18} className="done-icon" />}
                                 </button>
                             ))}
@@ -96,7 +96,7 @@ export default function MapPage({ progressOnly = false }) {
                     <section className="modal" role="dialog" aria-modal="true" aria-label="Detalhes da bruxinha" onClick={(event) => event.stopPropagation()}>
                         <button className="icon-button close" onClick={() => setSelected(null)} aria-label="Fechar"><X size={20} /></button>
                         <span className="eyebrow">LOCALIZAÇÃO ENCONTRADA</span>
-                        <h2>Bruxinha #{String(active.number).padStart(3, "0")}</h2>
+                        <h2>{active.name?.trim() || "Bruxinha"} #{String(active.number).padStart(3, "0")}</h2>
                         <span className={`badge ${active.difficulty}`}>{labels[active.difficulty]}</span>
                         <div className="photo-grid">
                             {(active.images || []).map((image, index) => <a key={image.path || index} href={image.url} target="_blank" rel="noreferrer"><img src={image.url} alt={`Localização da bruxinha, foto ${index + 1}`} /></a>)}

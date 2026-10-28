@@ -3,7 +3,7 @@ import { Plus, Save, Trash2, X, MapPin } from "lucide-react";
 import GameMap from "../components/Map/GameMap";
 import { subscribeWitches, saveWitch, removeWitch } from "../services/witchService";
 
-const empty = { number: "", difficulty: "easy", x: null, y: null, images: [] };
+const empty = { name: "", number: "", difficulty: "easy", x: null, y: null, images: [] };
 
 export default function AdminPage() {
     const [witches, setWitches] = useState([]);
@@ -73,6 +73,7 @@ export default function AdminPage() {
             await saveWitch({
                 ...form,
                 number: Number(form.number),
+                name: form.name.trim(),
                 files,
                 existingImages: form.images || []
             });
@@ -87,7 +88,7 @@ export default function AdminPage() {
     }
 
     async function handleDelete(witch) {
-        if (!window.confirm(`Excluir a bruxinha #${witch.number}?`)) return;
+        if (!window.confirm(`Excluir ${witch.name || "Bruxinha"} #${String(witch.number).padStart(3, "0")}?`)) return;
         setError("");
         try {
             await removeWitch(witch);
@@ -142,7 +143,7 @@ export default function AdminPage() {
                 <div className="admin-list">{witches.map((witch) => (
                     <div className="admin-row" key={witch.id}>
                         <span className={`difficulty-dot ${witch.difficulty}`} />
-                        <strong>Bruxinha #{String(witch.number).padStart(3, "0")}</strong>
+                        <strong>{witch.name?.trim() || "Bruxinha"} #{String(witch.number).padStart(3, "0")}</strong>
                         <span className="muted">{witch.difficulty === "easy" ? "Fácil" : witch.difficulty === "medium" ? "Médio" : "Difícil"}</span>
                         <button className="button secondary" onClick={() => startEdit(witch)}>Editar</button>
                         <button className="icon-button danger" onClick={() => handleDelete(witch)} aria-label="Excluir"><Trash2 size={18} /></button>
