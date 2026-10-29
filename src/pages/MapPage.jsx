@@ -12,6 +12,7 @@ export default function MapPage() {
     const { user, isAdmin } = useAuth();
     const [witches, setWitches] = useState([]);
     const [completed, setCompleted] = useState(new Set());
+    const [progressReady, setProgressReady] = useState(false);
     const [selected, setSelected] = useState(null);
     const [filter, setFilter] = useState("all");
     const [status, setStatus] = useState("all");
@@ -20,7 +21,15 @@ export default function MapPage() {
     const [busy, setBusy] = useState(false);
 
     useEffect(() => subscribeWitches(setWitches, () => setError("Não foi possível carregar os pontos.")), []);
-    useEffect(() => user ? subscribeProgress(user.uid, setCompleted, () => setError("Não foi possível carregar seu progresso.")) : undefined, [user]);
+    useEffect(() => {
+        setProgressReady(false);
+        setCompleted(new Set());
+        if (!user) return;
+        return subscribeProgress(user.uid, (ids) => {
+            setCompleted(ids);
+            setProgressReady(true);
+        }, () => setError("Não foi possível carregar seu progresso. Tente atualizar a página."));
+    }, [user]);
 
     const filtered = useMemo(() => witches.filter((witch) => {
         if (region !== "all" && (witch.region || (witch.y < 0.5 ? "north" : "south")) !== region) return false;
@@ -39,7 +48,7 @@ export default function MapPage() {
     const active = witches.find((witch) => witch.id === selected);
 
     async function handleToggle() {
-        if (!active || !user) return;
+        if (!active || !user || !progressReady) return;
         setBusy(true);
         try {
             await toggleCompleted(user.uid, active.id, completed.has(active.id));
@@ -140,7 +149,7 @@ export default function MapPage() {
                             {(active.images || []).map((image, index) => <a key={image.path || index} href={image.url} target="_blank" rel="noreferrer"><img src={image.url} alt={`Localização da bruxinha, foto ${index + 1}`} /></a>)}
                             {!active.images?.length && <p className="muted">Nenhuma imagem cadastrada.</p>}
                         </div>
-                        <button className={`button full ${completed.has(active.id) ? "secondary" : "primary"}`} onClick={handleToggle} disabled={busy}>
+                        <button className={`button full ${completed.has(active.id) ? "secondary" : "primary"}`} onClick={handleToggle} disabled={busy || !progressReady}>
                             <Check size={18} /> {completed.has(active.id) ? "Desmarcar conclusão" : "Marcar como concluída"}
                         </button>
                     </section>
