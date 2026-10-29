@@ -9,11 +9,14 @@ export default async function handler(req, res) {
         if (!actor || actor.role !== "owner") return res.status(403).json({ error: "Apenas o proprietário pode gerenciar usuários." });
         const { action, uid, role } = req.body || {};
         const store = admin.firestore();
-        if (action === "list") {
-            const snap = await store.collection("users").get();
-            const users = snap.docs.map((entry) => ({ uid: entry.id, playerId: entry.data().playerId, name: entry.data().name, role: entry.data().role || "player" }));
-            users.sort((a, b) => Number(a.playerId) - Number(b.playerId));
-            return res.status(200).json({ users });
+        if (action === "lookup") {
+            const playerId = String(req.body?.playerId || '').trim();
+            if (!/^[0-9]{1,12}$/.test(playerId)) return res.status(400).json({ error: 'Informe um ID válido.' });
+            // Consulta indexada, limitada a um documento: nunca lista todos os jogadores.
+            const found = await store.collection('users').where('playerId', '==', playerId).limit(1).get();
+            if (found.empty) return res.status(404).json({ error: 'Jogador não encontrado.' });
+            const entry = found.docs[0];
+            return res.status(200).json({ user: { uid: entry.id, playerId: entry.data().playerId, name: entry.data().name, role: entry.data().role || 'player' } });
         }
         if (action !== "role" || typeof uid !== "string" || !/^[\w-]{20,128}$/.test(uid) || !["player", "admin"].includes(role)) {
             return res.status(400).json({ error: "Solicitação inválida." });

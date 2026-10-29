@@ -43,6 +43,7 @@ export default function MapPage() {
         setBusy(true);
         try {
             await toggleCompleted(user.uid, active.id, completed.has(active.id));
+            setCompleted((previous) => { const next = new Set(previous); if (next.has(active.id)) next.delete(active.id); else next.add(active.id); return next; });
         } catch (caught) {
             setError(caught.message || "Não foi possível atualizar o progresso.");
         } finally {

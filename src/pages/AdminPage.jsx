@@ -35,18 +35,18 @@ export default function AdminPage() {
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
 
-    useEffect(() => subscribeWitches(setWitches, () => setError("Falha ao carregar pontos.")), []);
+    useEffect(() => subscribeWitches(setWitches, () => setError("Falha ao carregar pontos."), { adminView: true }), []);
 
     function nextAvailable(points) {
         return Array.from({ length: 100 }, (_, index) => index + 1).find((number) => !points.some((witch) => Number(witch.number) === number));
     }
 
-    async function ownerRequest(action, uid, role) {
+    async function ownerRequest(action, uid, role, playerId) {
         const token = await auth.currentUser.getIdToken();
         const response = await fetch("/api/manage-users", {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ action, uid, role })
+            body: JSON.stringify({ action, uid, role, playerId })
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Falha ao gerenciar usuários.");
@@ -57,20 +57,20 @@ export default function AdminPage() {
         if (!isOwner) return;
         setLoadingUsers(true);
         try {
-            const data = await ownerRequest("list");
-            setUsers(data.users || []);
+            const data = await ownerRequest("lookup", undefined, undefined, userSearch.trim());
+            setUsers(data.user ? [data.user] : []);
         } catch (caught) { setError(caught.message); }
         finally { setLoadingUsers(false); }
     }
 
-    useEffect(() => { if (tab === "users" && isOwner) loadUsers(); }, [tab, isOwner]);
+
 
     async function changeRole(uid, role) {
         setRoleBusy(uid); setError("");
         try {
             await ownerRequest("role", uid, role);
             setMessage("Permissões atualizadas. O usuário deve entrar novamente para atualizar o acesso.");
-            await loadUsers();
+            setUsers((previous) => previous.map((item) => item.uid === uid ? { ...item, role } : item));
         } catch (caught) { setError(caught.message); }
         finally { setRoleBusy(""); }
     }
@@ -281,7 +281,14 @@ export default function AdminPage() {
                     );
                 })}
             </div>
-            </> : <section className="panel"><div className="section-header"><div><h2>Usuários cadastrados</h2><p className="muted">Somente o proprietário pode alterar permissões.</p></div><button className="button secondary" onClick={loadUsers} disabled={loadingUsers}>{loadingUsers ? "Carregando..." : "Atualizar lista"}</button></div><div className="user-search-row"><label className="visually-hidden" htmlFor="user-search">Pesquisar usuários por nome ou ID</label><input id="user-search" type="search" placeholder="Pesquisar por nome ou ID..." value={userSearch} onChange={(event) => setUserSearch(event.target.value)} autoComplete="off" /><span className="muted" aria-live="polite">{visibleUsers.length} de {users.length} usuários</span></div><div className="admin-table-scroll"><table className="admin-table"><thead><tr><th>Nome</th><th>ID</th><th>Permissão</th><th>Ação</th></tr></thead><tbody>{visibleUsers.map((item) => <tr key={item.uid}><td>{item.name || "Sem nome"}</td><td>#{item.playerId}</td><td>{item.role === "owner" ? "Proprietário" : item.role === "admin" ? "Administrador" : "Jogador"}</td><td>{item.role === "owner" ? "Protegido" : <button className="button secondary" disabled={Boolean(roleBusy)} onClick={() => changeRole(item.uid, item.role === "admin" ? "player" : "admin")}>{roleBusy === item.uid ? "Salvando..." : item.role === "admin" ? "Remover admin" : "Tornar admin"}</button>}</td></tr>)}</tbody></table></div>{!users.length && !loadingUsers && <p className="muted">Nenhum usuário carregado.</p>}{users.length > 0 && visibleUsers.length === 0 && <p className="muted">Nenhum usuário encontrado.</p>}</section>}
+            </> : <section className="panel"><div className="section-header"><div><h2>Gerenciar administradores</h2><p className="muted">Consulte um jogador pelo ID. Não carregamos a lista inteira de usuários.</p></div></div>
+                <form className="user-search-row" onSubmit={(event) => { event.preventDefault(); loadUsers(); }}>
+                    <label className="visually-hidden" htmlFor="user-search">ID do jogador</label>
+                    <input id="user-search" type="text" inputMode="numeric" placeholder="Digite o ID do jogador" value={userSearch} onChange={(event) => { setUserSearch(event.target.value); setUsers([]); }} autoComplete="off" />
+                    <button className="button secondary" type="submit" disabled={loadingUsers || !/^\d{1,12}$/.test(userSearch.trim())}>{loadingUsers ? "Buscando..." : "Buscar ID"}</button>
+                </form>
+                {users.length > 0 && <div className="admin-table-scroll"><table className="admin-table"><thead><tr><th>Nome</th><th>ID</th><th>Permissão</th><th>Ação</th></tr></thead><tbody>{users.map((item) => <tr key={item.uid}><td>{item.name || "Sem nome"}</td><td>#{item.playerId}</td><td>{item.role === "owner" ? "Proprietário" : item.role === "admin" ? "Administrador" : "Jogador"}</td><td>{item.role === "owner" ? "Protegido" : <button className="button secondary" disabled={Boolean(roleBusy)} onClick={() => changeRole(item.uid, item.role === "admin" ? "player" : "admin")}>{roleBusy === item.uid ? "Salvando..." : item.role === "admin" ? "Remover admin" : "Tornar admin"}</button>}</td></tr>)}</tbody></table></div>}
+            </section>}
             {confirmDelete && <div className="modal-backdrop" onClick={() => { if (!deleting) setConfirmDelete(null); }}><section className="modal confirm-modal" role="dialog" aria-modal="true" aria-label="Confirmar exclusão" onClick={(event) => event.stopPropagation()}><h2>Excluir ponto?</h2><p>Deseja excluir {confirmDelete.name} #{String(confirmDelete.number).padStart(3, "0")}? Esta ação não pode ser desfeita.</p><div className="confirm-actions"><button className="button secondary" disabled={deleting} onClick={() => setConfirmDelete(null)}>Cancelar</button><button className="button danger-button" disabled={deleting} onClick={() => handleDelete(confirmDelete)}>{deleting ? "Excluindo..." : "Excluir ponto"}</button></div></section></div>}
         </main>
     );

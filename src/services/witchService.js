@@ -1,46 +1,46 @@
 import { collection, doc, onSnapshot, deleteDoc, serverTimestamp, runTransaction } from "firebase/firestore";
-import { db } from "./firebase";
+import { db, auth } from "./firebase";
 import { uploadWitchImage, deleteWitchImage } from "./cloudinaryService";
 
-// Um único listener para os pontos, compartilhado entre Mapa e Administração.
-// O intervalo curto evita refazer a consulta ao navegar entre páginas.
-let currentWitches = null;
-let firestoreUnsubscribe = null;
-let releaseTimer = null;
-const subscribers = new Set();
-const errors = new Set();
+// O mapa público consulta um catálogo compartilhado na CDN, sem listeners Firestore.
+// A administração faz uma leitura pontual somente quando abre a página ou salva algo.
+let cachedPoints = null;
+let cachedAt = 0;
+const CACHE_MS = 120000;
 
-export function subscribeWitches(callback, onError) {
-    subscribers.add(callback);
-    if (onError) errors.add(onError);
-    if (releaseTimer) {
-        clearTimeout(releaseTimer);
-        releaseTimer = null;
+export function invalidatePoints() { cachedAt = 0; }
+
+export function subscribeWitches(callback, onError, { adminView = false } = {}) {
+    let active = true;
+    async function load() {
+        try {
+            if (!adminView && cachedPoints && Date.now() - cachedAt < CACHE_MS) {
+                callback(cachedPoints);
+                return;
+            }
+            let points;
+            if (adminView) {
+                const { getDocs } = await import('firebase/firestore');
+                const snapshot = await getDocs(collection(db, 'witches'));
+                points = snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
+            } else {
+                const token = await auth.currentUser?.getIdToken();
+                if (!token) throw new Error('Faça login para consultar o mapa.');
+                const response = await fetch('/api/public-points', { headers: { Authorization: `Bearer ${token}` } });
+                if (!response.ok) throw new Error('Falha ao consultar catálogo de pontos.');
+                const data = await response.json();
+                points = data.points || [];
+                cachedPoints = points;
+                cachedAt = Date.now();
+            }
+            points.sort((a, b) => Number(a.number) - Number(b.number));
+            if (active) callback(points);
+        } catch (error) { if (active && onError) onError(error); }
     }
-    if (currentWitches !== null) callback(currentWitches);
-    if (!firestoreUnsubscribe) {
-        firestoreUnsubscribe = onSnapshot(collection(db, "witches"), (snapshot) => {
-            currentWitches = snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
-            currentWitches.sort((a, b) => Number(a.number) - Number(b.number));
-            subscribers.forEach((notify) => notify(currentWitches));
-        }, (error) => {
-            errors.forEach((notify) => notify(error));
-        });
-    }
-    return () => {
-        subscribers.delete(callback);
-        if (onError) errors.delete(onError);
-        if (subscribers.size === 0) {
-            releaseTimer = setTimeout(() => {
-                if (subscribers.size === 0 && firestoreUnsubscribe) {
-                    firestoreUnsubscribe();
-                    firestoreUnsubscribe = null;
-                    // O cache local do SDK continua disponível após desconectar.
-                }
-                releaseTimer = null;
-            }, 30000);
-        }
-    };
+    load();
+    const refresh = () => { if (active) load(); };
+    window.addEventListener('witches-updated', refresh);
+    return () => { active = false; window.removeEventListener('witches-updated', refresh); };
 }
 
 export async function saveWitch({ number, name, region, difficulty, x, y, files = [], existingImages = [], id: editingId }) {
@@ -73,6 +73,8 @@ export async function saveWitch({ number, name, region, difficulty, x, y, files 
         });
         // A exclusão das imagens removidas é posterior à gravação para não perder dados em caso de erro.
         const retained = new Set(images.map((image) => image.publicId || image.path));
+        invalidatePoints();
+        window.dispatchEvent(new Event("witches-updated"));
         await Promise.allSettled(previousImages.filter((image) => !retained.has(image.publicId || image.path)).map(deleteWitchImage));
     } catch (error) {
         await Promise.allSettled(uploaded.map(deleteWitchImage));
@@ -82,5 +84,7 @@ export async function saveWitch({ number, name, region, difficulty, x, y, files 
 
 export async function removeWitch(witch) {
     await deleteDoc(doc(db, "witches", witch.id));
+    invalidatePoints();
+    window.dispatchEvent(new Event("witches-updated"));
     await Promise.allSettled((witch.images || []).map(deleteWitchImage));
 }

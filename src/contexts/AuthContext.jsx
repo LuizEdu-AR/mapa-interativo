@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, getIdTokenResult } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../services/firebase";
 
 const AuthContext = createContext(null);
@@ -12,9 +12,9 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        let unsubscribeProfile = () => {};
+        let generation = 0;
         const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
-            unsubscribeProfile();
+            const request = ++generation;
             setUser(currentUser);
             setProfile(null);
             setClaims({});
@@ -29,13 +29,14 @@ export function AuthProvider({ children }) {
             } catch (error) {
                 console.error("Falha ao obter permissões:", error);
             }
-            unsubscribeProfile = onSnapshot(doc(db, "users", currentUser.uid), (snapshot) => {
-                setProfile(snapshot.exists() ? snapshot.data() : null);
-                setLoading(false);
-            }, () => setLoading(false));
+            try {
+                const snapshot = await getDoc(doc(db, "users", currentUser.uid));
+                if (request === generation) setProfile(snapshot.exists() ? snapshot.data() : null);
+            } catch (error) { console.error("Falha ao carregar perfil:", error); }
+            finally { if (request === generation) setLoading(false); }
         });
         return () => {
-            unsubscribeProfile();
+            generation++;
             unsubscribeAuth();
         };
     }, []);
