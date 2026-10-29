@@ -31,6 +31,7 @@ export default function AdminPage() {
     const [editing, setEditing] = useState(false);
     const [placing, setPlacing] = useState(false);
     const [saving, setSaving] = useState(false);
+    const saveInProgressRef = useRef(false);
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
 
@@ -140,6 +141,8 @@ export default function AdminPage() {
 
     async function handleSave(event) {
         event.preventDefault();
+        if (saveInProgressRef.current) return;
+        saveInProgressRef.current = true;
         setSaving(true);
         setError("");
         try {
@@ -166,6 +169,7 @@ export default function AdminPage() {
         } catch (caught) {
             setError(caught.message || "Erro ao salvar.");
         } finally {
+            saveInProgressRef.current = false;
             setSaving(false);
         }
     }

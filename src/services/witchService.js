@@ -1,13 +1,46 @@
-import { collection, doc, onSnapshot, setDoc, deleteDoc, serverTimestamp, getDoc, runTransaction } from "firebase/firestore";
+import { collection, doc, onSnapshot, deleteDoc, serverTimestamp, runTransaction } from "firebase/firestore";
 import { db } from "./firebase";
 import { uploadWitchImage, deleteWitchImage } from "./cloudinaryService";
 
+// Um único listener para os pontos, compartilhado entre Mapa e Administração.
+// O intervalo curto evita refazer a consulta ao navegar entre páginas.
+let currentWitches = null;
+let firestoreUnsubscribe = null;
+let releaseTimer = null;
+const subscribers = new Set();
+const errors = new Set();
+
 export function subscribeWitches(callback, onError) {
-    return onSnapshot(collection(db, "witches"), (snapshot) => {
-        const witches = snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
-        witches.sort((a, b) => Number(a.number) - Number(b.number));
-        callback(witches);
-    }, onError);
+    subscribers.add(callback);
+    if (onError) errors.add(onError);
+    if (releaseTimer) {
+        clearTimeout(releaseTimer);
+        releaseTimer = null;
+    }
+    if (currentWitches !== null) callback(currentWitches);
+    if (!firestoreUnsubscribe) {
+        firestoreUnsubscribe = onSnapshot(collection(db, "witches"), (snapshot) => {
+            currentWitches = snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
+            currentWitches.sort((a, b) => Number(a.number) - Number(b.number));
+            subscribers.forEach((notify) => notify(currentWitches));
+        }, (error) => {
+            errors.forEach((notify) => notify(error));
+        });
+    }
+    return () => {
+        subscribers.delete(callback);
+        if (onError) errors.delete(onError);
+        if (subscribers.size === 0) {
+            releaseTimer = setTimeout(() => {
+                if (subscribers.size === 0 && firestoreUnsubscribe) {
+                    firestoreUnsubscribe();
+                    firestoreUnsubscribe = null;
+                    // O cache local do SDK continua disponível após desconectar.
+                }
+                releaseTimer = null;
+            }, 30000);
+        }
+    };
 }
 
 export async function saveWitch({ number, name, region, difficulty, x, y, files = [], existingImages = [], id: editingId }) {
@@ -20,9 +53,9 @@ export async function saveWitch({ number, name, region, difficulty, x, y, files 
     if (existingImages.length + files.length > 2) throw new Error("São permitidas no máximo duas imagens.");
     const id = String(n).padStart(3, "0");
     const pointRef = doc(db, "witches", id);
-    const previous = await getDoc(pointRef);
-    if (previous.exists() && !editingId) throw new Error("Este número acabou de ser ocupado. Feche e abra o cadastro para receber outro.");
-    const previousImages = previous.exists() ? (previous.data().images || []) : [];
+    // A verificação de conflito acontece na própria transação: dispensa um getDoc
+    // adicional, sem abrir mão da proteção contra números duplicados.
+    let previousImages = [];
     const uploaded = [];
     try {
         for (const file of files) {
@@ -33,7 +66,9 @@ export async function saveWitch({ number, name, region, difficulty, x, y, files 
         await runTransaction(db, async (transaction) => {
             const current = await transaction.get(pointRef);
             if (!editingId && current.exists()) throw new Error("Outro administrador cadastrou esse número. Reabra o formulário e tente novamente.");
+            if (editingId && String(editingId) !== id) throw new Error("Não é possível alterar o número de um ponto existente.");
             if (editingId && !current.exists()) throw new Error("Este ponto foi excluído por outro administrador.");
+            previousImages = current.exists() ? (current.data().images || []) : [];
             transaction.set(pointRef, { number: n, name: name.trim(), region, difficulty, x, y, images, updatedAt: serverTimestamp() });
         });
         // A exclusão das imagens removidas é posterior à gravação para não perder dados em caso de erro.

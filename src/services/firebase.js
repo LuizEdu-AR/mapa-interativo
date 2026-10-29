@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const config = {
@@ -15,5 +15,9 @@ const config = {
 const app = initializeApp(config);
 
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+// Cache persistente entre navegações e recarregamentos, inclusive com várias abas.
+// O Firestore continua validando alterações no servidor quando há conexão.
+export const db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
 export const storage = getStorage(app);
