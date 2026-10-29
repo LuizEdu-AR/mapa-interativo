@@ -1,14 +1,31 @@
-import { collection, doc, onSnapshot, deleteDoc, serverTimestamp, runTransaction } from "firebase/firestore";
+import { collection, doc, deleteDoc, serverTimestamp, runTransaction } from "firebase/firestore";
 import { db, auth } from "./firebase";
 import { uploadWitchImage, deleteWitchImage } from "./cloudinaryService";
 
-// O mapa público consulta um catálogo compartilhado na CDN, sem listeners Firestore.
+// O mapa consulta um catálogo consolidado em um documento via API, sem listeners Firestore.
 // A administração faz uma leitura pontual somente quando abre a página ou salva algo.
 let cachedPoints = null;
 let cachedAt = 0;
 const CACHE_MS = 120000;
 
 export function invalidatePoints() { cachedAt = 0; }
+
+// A API atualiza o catálogo após uma alteração administrativa. Se falhar,
+// a alteração original já foi salva; não devemos tratá-la como fracassada.
+async function refreshServerCatalog() {
+    try {
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) throw new Error('Administrador não autenticado.');
+        const response = await fetch('/api/public-points', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    } catch (error) {
+        console.error('Ponto salvo, mas não foi possível atualizar o catálogo público:', error);
+        window.dispatchEvent(new CustomEvent('catalog-refresh-error'));
+    }
+}
 
 export function subscribeWitches(callback, onError, { adminView = false } = {}) {
     let active = true;
@@ -75,6 +92,7 @@ export async function saveWitch({ number, name, region, difficulty, x, y, files 
         const retained = new Set(images.map((image) => image.publicId || image.path));
         invalidatePoints();
         window.dispatchEvent(new Event("witches-updated"));
+        await refreshServerCatalog();
         await Promise.allSettled(previousImages.filter((image) => !retained.has(image.publicId || image.path)).map(deleteWitchImage));
     } catch (error) {
         await Promise.allSettled(uploaded.map(deleteWitchImage));
@@ -86,5 +104,6 @@ export async function removeWitch(witch) {
     await deleteDoc(doc(db, "witches", witch.id));
     invalidatePoints();
     window.dispatchEvent(new Event("witches-updated"));
+    await refreshServerCatalog();
     await Promise.allSettled((witch.images || []).map(deleteWitchImage));
 }
