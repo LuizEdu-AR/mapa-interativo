@@ -1,9 +1,11 @@
-// regras antigas
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ==========================================
+    // AUTENTICAÇÃO E PERMISSÕES
+    // ==========================================
 
     function isAuthenticated() {
       return request.auth != null;
@@ -23,6 +25,10 @@ service cloud.firestore {
       return isAuthenticated()
         && request.auth.uid == userId;
     }
+
+    // ==========================================
+    // VALIDAÇÃO DO PERFIL
+    // ==========================================
 
     function isValidPlayerProfile() {
       return request.resource.data.keys().hasOnly([
@@ -50,6 +56,75 @@ service cloud.firestore {
           + '@players.caca-bruxinhas.invalid';
     }
 
+    // ==========================================
+    // VALIDAÇÃO DOS PONTOS
+    // ==========================================
+
+    function isValidWitch() {
+      return request.resource.data.keys().hasOnly([
+          'number',
+          'name',
+          'region',
+          'difficulty',
+          'x',
+          'y',
+          'images',
+          'updatedAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'number',
+          'name',
+          'region',
+          'difficulty',
+          'x',
+          'y',
+          'images',
+          'updatedAt'
+        ])
+        && request.resource.data.number is int
+        && request.resource.data.number >= 1
+        && request.resource.data.number <= 100
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.region in ['north', 'south']
+        && request.resource.data.difficulty in [
+          'easy',
+          'medium',
+          'hard'
+        ]
+        && request.resource.data.x is number
+        && request.resource.data.x >= 0
+        && request.resource.data.x <= 1
+        && request.resource.data.y is number
+        && request.resource.data.y >= 0
+        && request.resource.data.y <= 1
+        && request.resource.data.images is list
+        && request.resource.data.images.size() <= 2;
+    }
+
+    // ==========================================
+    // VALIDAÇÃO DO PROGRESSO CONSOLIDADO
+    // ==========================================
+
+    function isValidProgress() {
+      return request.resource.data.keys().hasOnly([
+          'completedIds',
+          'version'
+        ])
+        && request.resource.data.keys().hasAll([
+          'completedIds',
+          'version'
+        ])
+        && request.resource.data.version == 1
+        && request.resource.data.completedIds is list
+        && request.resource.data.completedIds.size() <= 100;
+    }
+
+    // ==========================================
+    // USUÁRIOS
+    // ==========================================
+
     match /users/{userId} {
 
       allow read: if isOwnProfile(userId) || isAdmin();
@@ -58,6 +133,33 @@ service cloud.firestore {
         && isValidPlayerProfile();
 
       allow update, delete: if false;
+
+      // ========================================
+      // NOVO SISTEMA DE PROGRESSO CONSOLIDADO
+      // ========================================
+
+      match /progress/{progressId} {
+
+        allow read: if isOwnProfile(userId)
+          && progressId == 'summary';
+
+        allow create: if isOwnProfile(userId)
+          && progressId == 'summary'
+          && isValidProgress();
+
+        allow update: if isOwnProfile(userId)
+          && progressId == 'summary'
+          && isValidProgress()
+          && request.resource.data.diff(resource.data)
+            .affectedKeys().hasOnly(['completedIds']);
+
+        allow delete: if false;
+      }
+
+      // ========================================
+      // SISTEMA ANTIGO DE PROGRESSO
+      // Mantido para preservar os registros
+      // ========================================
 
       match /completedWitches/{witchId} {
 
@@ -81,11 +183,18 @@ service cloud.firestore {
       }
     }
 
+    // ==========================================
+    // PONTOS DO MAPA
+    // ==========================================
+
     match /witches/{witchId} {
 
       allow read: if isAuthenticated();
 
-      allow create, update, delete: if isAdmin();
+      allow create, update: if isAdmin()
+        && isValidWitch();
+
+      allow delete: if isAdmin();
     }
   }
 }
