@@ -6,7 +6,7 @@ import { friendlyError } from "../services/errorMessages";
 import GameMap from "../components/Map/GameMap";
 import { subscribeWitches, saveWitch, removeWitch } from "../services/witchService";
 
-const empty = { name: "", number: "", difficulty: "easy", region: "south", x: null, y: null, images: [] };
+const empty = { name: "", number: "", difficulty: "easy", region: "south", x: null, y: null, images: [], available: true };
 
 export default function AdminPage() {
     const { isOwner } = useAuth();
@@ -149,7 +149,7 @@ export default function AdminPage() {
 
     function startEdit(witch) {
         scrollToEditRef.current = true;
-        setForm({ ...witch, name: witch.name || "Bruxinha", region: witch.region || (witch.y < 0.5 ? "north" : "south") });
+        setForm({ ...witch, name: witch.name || "Bruxinha", region: witch.region || (witch.y < 0.5 ? "north" : "south"), available: witch.available !== false });
         setFiles([]);
         setFileError("");
         setEditing(true);
@@ -269,6 +269,12 @@ export default function AdminPage() {
                         <select id="difficulty" value={form.difficulty} onChange={(event) => setForm({ ...form, difficulty: event.target.value })}>
                             <option value="easy">Fácil</option><option value="medium">Médio</option><option value="hard">Difícil</option>
                         </select>
+                        <label htmlFor="available">Disponibilidade no mapa</label>
+                        <select id="available" value={form.available === false ? "hidden" : "visible"} onChange={(event) => setForm({ ...form, available: event.target.value === "visible" })}>
+                            <option value="visible">Disponível — mostrar aos jogadores</option>
+                            <option value="hidden">Aguardando realocação — ocultar localização</option>
+                        </select>
+                        {form.available === false && <p className="muted">Este ponto não aparecerá no mapa nem na lista dos jogadores. Seu ID e as conclusões anteriores serão preservados.</p>}
                         <label>Localização</label>
                         <div className="coordinate-box">{form.x === null ? "Selecione um local no mapa" : `X: ${form.x.toFixed(5)} | Y: ${form.y.toFixed(5)}`}</div>
                         <button type="button" className={`button ${placing ? "primary" : "secondary"}`} onClick={() => setPlacing(!placing)}><MapPin size={17} /> {placing ? "Clique no mapa para posicionar" : "Alterar posição no mapa"}</button>
@@ -288,7 +294,7 @@ export default function AdminPage() {
                         {Boolean(form.images?.length) && <div className="photo-grid">{form.images.map((image) => <div key={image.path} className="image-edit"><img src={image.url} alt="Foto cadastrada" /><button type="button" onClick={() => setForm({ ...form, images: form.images.filter((item) => item.path !== image.path) })}>Remover</button></div>)}</div>}
                         <button className="button primary full" type="submit" disabled={saving || form.x === null || form.y === null}><Save size={17} /> {saving ? "Salvando..." : "Salvar bruxinha"}</button>
                     </form>
-                    <div className="admin-map"><GameMap points={witches} selectionMode={placing} onMapSelect={(point) => { setForm((previous) => ({ ...previous, ...point })); setPlacing(false); }} /></div>
+                    <div className="admin-map"><GameMap points={witches.filter((witch) => witch.available !== false)} selectionMode={placing} onMapSelect={(point) => { setForm((previous) => ({ ...previous, ...point })); setPlacing(false); }} /></div>
                 </div>
             )}
             <div className="region-manager-list">
@@ -315,7 +321,7 @@ export default function AdminPage() {
                                         <tbody>{regionWitches.map((witch) => (
                                             <tr key={witch.id}>
                                                 <td><span className={`difficulty-dot ${witch.difficulty}`} /> <strong>{witch.name?.trim() || "Bruxinha"} #{String(witch.number).padStart(3, "0")}</strong></td>
-                                                <td>{witch.difficulty === "easy" ? "Fácil" : witch.difficulty === "medium" ? "Médio" : "Difícil"}</td>
+                                                <td>{witch.available === false ? "Aguardando realocação" : witch.difficulty === "easy" ? "Fácil" : witch.difficulty === "medium" ? "Médio" : "Difícil"}</td>
                                                 <td><div className="table-actions"><button className="icon-button" title="Editar" aria-label={`Editar ${witch.name}`} onClick={() => startEdit(witch)}><Pencil size={16} /></button><button className="icon-button danger" title="Excluir" aria-label={`Excluir ${witch.name}`} onClick={() => setConfirmDelete(witch)}><Trash2 size={16} /></button></div></td>
                                             </tr>
                                         ))}</tbody>

@@ -60,12 +60,13 @@ export function subscribeWitches(callback, onError, { adminView = false } = {}) 
     return () => { active = false; window.removeEventListener('witches-updated', refresh); };
 }
 
-export async function saveWitch({ number, name, region, difficulty, x, y, files = [], existingImages = [], id: editingId }) {
+export async function saveWitch({ number, name, region, difficulty, x, y, files = [], existingImages = [], available = true, id: editingId }) {
     const n = Number(number);
     if (!Number.isInteger(n) || n < 1 || n > 100) throw new Error("Escolha um número de 1 a 100.");
     if (!name || !name.trim() || name.trim().length > 80) throw new Error("Informe o nome do local (até 80 caracteres).");
     if (!["north", "south"].includes(region)) throw new Error("Selecione Norte ou Sul.");
     if (!["easy", "medium", "hard"].includes(difficulty)) throw new Error("Dificuldade inválida.");
+    if (typeof available !== "boolean") throw new Error("Disponibilidade inválida.");
     if (![x, y].every((value) => typeof value === "number" && value >= 0 && value <= 1)) throw new Error("Selecione uma posição válida no mapa.");
     if (existingImages.length + files.length > 2) throw new Error("São permitidas no máximo duas imagens.");
     const id = String(n).padStart(3, "0");
@@ -86,7 +87,7 @@ export async function saveWitch({ number, name, region, difficulty, x, y, files 
             if (editingId && String(editingId) !== id) throw new Error("Não é possível alterar o número de um ponto existente.");
             if (editingId && !current.exists()) throw new Error("Este ponto foi excluído por outro administrador.");
             previousImages = current.exists() ? (current.data().images || []) : [];
-            transaction.set(pointRef, { number: n, name: name.trim(), region, difficulty, x, y, images, updatedAt: serverTimestamp() });
+            transaction.set(pointRef, { number: n, name: name.trim(), region, difficulty, x, y, images, available, updatedAt: serverTimestamp() });
         });
         // A exclusão das imagens removidas é posterior à gravação para não perder dados em caso de erro.
         const retained = new Set(images.map((image) => image.publicId || image.path));

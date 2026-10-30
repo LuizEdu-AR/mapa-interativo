@@ -31,13 +31,15 @@ export default function MapPage() {
         }, () => setError("Não foi possível carregar seu progresso. Tente atualizar a página."));
     }, [user]);
 
-    const filtered = useMemo(() => witches.filter((witch) => {
+    const visibleWitches = useMemo(() => witches.filter((witch) => witch.available !== false), [witches]);
+    const hiddenNorth = witches.filter((witch) => witch.region === "north" && witch.available === false).length;
+    const filtered = useMemo(() => visibleWitches.filter((witch) => {
         if (region !== "all" && (witch.region || (witch.y < 0.5 ? "north" : "south")) !== region) return false;
         if (filter !== "all" && witch.difficulty !== filter) return false;
         if (status === "done" && !completed.has(witch.id)) return false;
         if (status === "pending" && completed.has(witch.id)) return false;
         return true;
-    }), [witches, completed, filter, status, region]);
+    }), [visibleWitches, completed, filter, status, region]);
     const mapped = useMemo(() => filtered.map((witch) => ({ ...witch, completed: completed.has(witch.id) })), [filtered, completed]);
     const count = witches.filter((witch) => completed.has(witch.id)).length;
     const regionalCounts = useMemo(() => witches.reduce((totals, witch) => {
@@ -45,7 +47,7 @@ export default function MapPage() {
         if (region === "north" || region === "south") totals[region] += 1;
         return totals;
     }, { north: 0, south: 0 }), [witches]);
-    const active = witches.find((witch) => witch.id === selected);
+    const active = visibleWitches.find((witch) => witch.id === selected);
 
     async function handleToggle() {
         if (!active || !user || !progressReady) return;
@@ -86,12 +88,17 @@ export default function MapPage() {
             </section>
             <section className="region-catalog-section" aria-label="Bruxinhas catalogadas por região">
                 <div className="region-progress-grid" aria-label="Catalogação por região">
-                    {[{ key: "north", label: "Bruxinhas do Norte catalogadas" }, { key: "south", label: "Bruxinhas do Sul catalogadas" }].map(({ key, label }) => (
-                        <div className="region-progress-card" key={key}>
-                            <div className="region-progress-heading"><span>{label}</span><strong>{regionalCounts[key]}/50</strong></div>
-                            <div className="region-progress-track" role="progressbar" aria-label={label} aria-valuenow={regionalCounts[key]} aria-valuemin={0} aria-valuemax={50}>
-                                <div style={{ width: `${Math.min(100, regionalCounts[key] * 2)}%` }} />
+                    {[
+                        { label: "Bruxinhas do Norte catalogadas antes da saída da ilha", value: 40, historical: true },
+                        { label: "Bruxinhas do Norte com localização disponível após a saída da ilha", value: regionalCounts.north - hiddenNorth },
+                        { label: "Bruxinhas do Sul catalogadas", value: regionalCounts.south }
+                    ].map(({ label, value, historical }) => (
+                        <div className="region-progress-card" key={label}>
+                            <div className="region-progress-heading"><span>{label}</span><strong>{value}/50</strong></div>
+                            <div className="region-progress-track" role="progressbar" aria-label={label} aria-valuenow={value} aria-valuemin={0} aria-valuemax={50}>
+                                <div style={{ width: `${Math.min(100, value * 2)}%` }} />
                             </div>
+                            {historical && <small className="muted">Registro histórico fixo: 40 pontos, incluindo 11 na antiga ilha.</small>}
                         </div>
                     ))}
                 </div>
@@ -100,6 +107,11 @@ export default function MapPage() {
                 <div className="section-header">
                     <div><span className="eyebrow">EXPLORE A CIDADE</span><h2>Mapa das Bruxinhas</h2></div>
                     {isAdmin && <Link className="button primary" to="/admin"><Plus size={17} /> Gerenciar pontos</Link>}
+                </div>
+                <div className="message island-notice" role="note">
+                    <strong>Atualização da Região Norte — retirada da ilha</strong>
+                    <p>Devido à retirada da ilha da cidade, 11 bruxinhas terão suas localizações realocadas para outros pontos do Norte. As localizações antigas serão retiradas do mapa conforme a atualização.</p>
+                    <p>Quem já resgatou essas bruxinhas mantém suas conquistas e não precisará resgatá-las novamente. {hiddenNorth > 0 ? `${hiddenNorth} ponto(s) aguardando nova localização no momento.` : "Acompanhe as atualizações das localizações."}</p>
                 </div>
                 <div className="filters">
                     <Filter size={17} />

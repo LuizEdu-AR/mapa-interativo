@@ -16,8 +16,8 @@ let bootstrapPromise = null;
 async function rebuildCatalog() {
   const snapshot = await admin.firestore().collection('witches').get();
   const points = snapshot.docs.map((entry) => {
-    const { number, name, region, difficulty, x, y, images = [] } = entry.data();
-    return { id: entry.id, number, name, region, difficulty, x, y, images };
+    const { number, name, region, difficulty, x, y, images = [], available = true } = entry.data();
+    return { id: entry.id, number, name, region, difficulty, x, y, images, available };
   }).sort((a, b) => Number(a.number) - Number(b.number));
   // Um único documento substitui até 100 leituras por requisição ao catálogo.
   // Limite do Firestore: 1 MiB por documento. As imagens devem ser URLs, não bytes.
