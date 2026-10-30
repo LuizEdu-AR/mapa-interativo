@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { loginPlayer, registerPlayer } from "../services/authService";
+import { friendlyError } from "../services/errorMessages";
 
 export default function AuthPage({ register = false }) {
     const navigate = useNavigate();
@@ -24,7 +25,7 @@ export default function AuthPage({ register = false }) {
             }
             navigate("/mapa", { replace: true });
         } catch (caught) {
-            setError(caught.message || "Não foi possível autenticar.");
+            setError(friendlyError(caught, "Não foi possível acessar sua conta. Tente novamente."));
         } finally {
             setLoading(false);
         }

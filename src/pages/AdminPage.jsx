@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Plus, Save, Trash2, X, MapPin, Pencil, Upload, Users } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { auth } from "../services/firebase";
+import { friendlyError } from "../services/errorMessages";
 import GameMap from "../components/Map/GameMap";
 import { subscribeWitches, saveWitch, removeWitch } from "../services/witchService";
 
@@ -19,6 +20,9 @@ export default function AdminPage() {
     });
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [roleBusy, setRoleBusy] = useState("");
+    const [resetTarget, setResetTarget] = useState(null);
+    const [resetBusy, setResetBusy] = useState(false);
+    const [newPassword, setNewPassword] = useState(null);
     const [confirmDelete, setConfirmDelete] = useState(null);
     const [deleting, setDeleting] = useState(false);
     const [witches, setWitches] = useState([]);
@@ -59,11 +63,27 @@ export default function AdminPage() {
         try {
             const data = await ownerRequest("lookup", undefined, undefined, userSearch.trim());
             setUsers(data.user ? [data.user] : []);
-        } catch (caught) { setError(caught.message); }
+        } catch (caught) { setError(friendlyError(caught)); }
         finally { setLoadingUsers(false); }
     }
 
 
+
+    async function resetPassword() {
+        if (!resetTarget || resetBusy) return;
+        setResetBusy(true);
+        setError("");
+        try {
+            const result = await ownerRequest("reset-password", resetTarget.uid);
+            setNewPassword({ name: resetTarget.name, playerId: resetTarget.playerId, password: result.password });
+            setResetTarget(null);
+        } catch (caught) {
+            setError(friendlyError(caught, "Não foi possível redefinir a senha."));
+            setResetTarget(null);
+        } finally {
+            setResetBusy(false);
+        }
+    }
 
     async function changeRole(uid, role) {
         setRoleBusy(uid); setError("");
@@ -71,7 +91,7 @@ export default function AdminPage() {
             await ownerRequest("role", uid, role);
             setMessage("Permissões atualizadas. O usuário deve entrar novamente para atualizar o acesso.");
             setUsers((previous) => previous.map((item) => item.uid === uid ? { ...item, role } : item));
-        } catch (caught) { setError(caught.message); }
+        } catch (caught) { setError(friendlyError(caught)); }
         finally { setRoleBusy(""); }
     }
 
@@ -281,14 +301,16 @@ export default function AdminPage() {
                     );
                 })}
             </div>
-            </> : <section className="panel"><div className="section-header"><div><h2>Gerenciar administradores</h2><p className="muted">Consulte um jogador pelo ID. Não carregamos a lista inteira de usuários.</p></div></div>
+            </> : <section className="panel"><div className="section-header"><div><h2>Gerenciar usuários e administradores</h2><p className="muted">Consulte um jogador pelo ID. Não carregamos a lista inteira de usuários.</p></div></div>
                 <form className="user-search-row" onSubmit={(event) => { event.preventDefault(); loadUsers(); }}>
                     <label className="visually-hidden" htmlFor="user-search">ID do jogador</label>
-                    <input id="user-search" type="text" inputMode="numeric" placeholder="Digite o ID do jogador" value={userSearch} onChange={(event) => { setUserSearch(event.target.value); setUsers([]); }} autoComplete="off" />
+                    <input id="user-search" type="text" inputMode="numeric" placeholder="Digite o ID do jogador" value={userSearch} onChange={(event) => { setUserSearch(event.target.value); setUsers([]); setNewPassword(null); }} autoComplete="off" />
                     <button className="button secondary" type="submit" disabled={loadingUsers || !/^\d{1,12}$/.test(userSearch.trim())}>{loadingUsers ? "Buscando..." : "Buscar ID"}</button>
                 </form>
-                {users.length > 0 && <div className="admin-table-scroll"><table className="admin-table"><thead><tr><th>Nome</th><th>ID</th><th>Permissão</th><th>Ação</th></tr></thead><tbody>{users.map((item) => <tr key={item.uid}><td>{item.name || "Sem nome"}</td><td>#{item.playerId}</td><td>{item.role === "owner" ? "Proprietário" : item.role === "admin" ? "Administrador" : "Jogador"}</td><td>{item.role === "owner" ? "Protegido" : <button className="button secondary" disabled={Boolean(roleBusy)} onClick={() => changeRole(item.uid, item.role === "admin" ? "player" : "admin")}>{roleBusy === item.uid ? "Salvando..." : item.role === "admin" ? "Remover admin" : "Tornar admin"}</button>}</td></tr>)}</tbody></table></div>}
+                {users.length > 0 && <div className="admin-table-scroll"><table className="admin-table"><thead><tr><th>Nome</th><th>ID</th><th>Permissão</th><th>Ação</th></tr></thead><tbody>{users.map((item) => <tr key={item.uid}><td>{item.name || "Sem nome"}</td><td>#{item.playerId}</td><td>{item.role === "owner" ? "Proprietário" : item.role === "admin" ? "Administrador" : "Jogador"}</td><td>{item.role === "owner" ? "Protegido" : <button className="button secondary" disabled={Boolean(roleBusy)} onClick={() => changeRole(item.uid, item.role === "admin" ? "player" : "admin")}>{roleBusy === item.uid ? "Salvando..." : item.role === "admin" ? "Remover admin" : "Tornar admin"}</button>} {item.role !== "owner" && <button className="button secondary" type="button" disabled={Boolean(roleBusy) || resetBusy} onClick={() => { setNewPassword(null); setResetTarget(item); }}>Redefinir senha</button>}</td></tr>)}</tbody></table></div>}
             </section>}
+            {resetTarget && <div className="modal-backdrop" onClick={() => { if (!resetBusy) setResetTarget(null); }}><section className="modal confirm-modal" role="dialog" aria-modal="true" aria-label="Confirmar redefinição de senha" onClick={(event) => event.stopPropagation()}><h2>Redefinir senha?</h2><p>Uma nova senha será criada para <strong>{resetTarget.name}</strong> (#{resetTarget.playerId}). A senha anterior deixará de funcionar. O progresso do jogador será preservado.</p><div className="confirm-actions"><button className="button secondary" type="button" disabled={resetBusy} onClick={() => setResetTarget(null)}>Cancelar</button><button className="button primary" type="button" disabled={resetBusy} onClick={resetPassword}>{resetBusy ? "Redefinindo..." : "Confirmar redefinição"}</button></div></section></div>}
+            {newPassword && <div className="modal-backdrop"><section className="modal confirm-modal" role="dialog" aria-modal="true" aria-label="Nova senha do jogador"><h2>Senha redefinida</h2><p>Nova senha para <strong>{newPassword.name}</strong> (#{newPassword.playerId}). Copie e compartilhe em particular com o jogador. Esta senha não será exibida novamente.</p><div className="coordinate-box" style={{ userSelect: "all", overflowWrap: "anywhere", fontSize: "1.1rem" }}>{newPassword.password}</div><div className="confirm-actions"><button className="button secondary" type="button" onClick={async () => { try { await navigator.clipboard.writeText(newPassword.password); setMessage("Senha copiada."); } catch { setError("Não foi possível copiar automaticamente. Selecione a senha para copiar."); } }}>Copiar senha</button><button className="button primary" type="button" onClick={() => setNewPassword(null)}>Fechar</button></div></section></div>}
             {confirmDelete && <div className="modal-backdrop" onClick={() => { if (!deleting) setConfirmDelete(null); }}><section className="modal confirm-modal" role="dialog" aria-modal="true" aria-label="Confirmar exclusão" onClick={(event) => event.stopPropagation()}><h2>Excluir ponto?</h2><p>Deseja excluir {confirmDelete.name} #{String(confirmDelete.number).padStart(3, "0")}? Esta ação não pode ser desfeita.</p><div className="confirm-actions"><button className="button secondary" disabled={deleting} onClick={() => setConfirmDelete(null)}>Cancelar</button><button className="button danger-button" disabled={deleting} onClick={() => handleDelete(confirmDelete)}>{deleting ? "Excluindo..." : "Excluir ponto"}</button></div></section></div>}
         </main>
     );
