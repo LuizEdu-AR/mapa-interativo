@@ -89,16 +89,16 @@ export default function MapPage() {
             <section className="region-catalog-section" aria-label="Bruxinhas catalogadas por região">
                 <div className="region-progress-grid" aria-label="Catalogação por região">
                     {[
-                        { label: "Bruxinhas do Norte catalogadas antes da saída da ilha", value: 40, historical: true },
-                        { label: "Bruxinhas do Norte com localização disponível após a saída da ilha", value: regionalCounts.north - hiddenNorth },
+                        { label: "Bruxinhas do Norte catalogadas para quem pegou as da ilha", value: regionalCounts.north, description: "Inclui os pontos da antiga ilha que aguardam realocação." },
+                        { label: "Bruxinhas do Norte catalogadas para quem NÃO pegou as da ilha", value: regionalCounts.north - hiddenNorth, description: "Pontos com localização disponível no momento." },
                         { label: "Bruxinhas do Sul catalogadas", value: regionalCounts.south }
-                    ].map(({ label, value, historical }) => (
+                    ].map(({ label, value, description }) => (
                         <div className="region-progress-card" key={label}>
                             <div className="region-progress-heading"><span>{label}</span><strong>{value}/50</strong></div>
                             <div className="region-progress-track" role="progressbar" aria-label={label} aria-valuenow={value} aria-valuemin={0} aria-valuemax={50}>
                                 <div style={{ width: `${Math.min(100, value * 2)}%` }} />
                             </div>
-                            {historical && <small className="muted">Registro histórico fixo: 40 pontos, incluindo 11 na antiga ilha.</small>}
+                            {description && <small className="muted">{description}</small>}
                         </div>
                     ))}
                 </div>
