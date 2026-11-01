@@ -1,21 +1,21 @@
-.celebration-overlay{position:fixed;inset:0;z-index:5000;background:radial-gradient(ellipse at 50% 35%,rgba(71,22,96,.48),rgba(7,3,13,.91) 66%);display:grid;place-items:center;padding:24px 18px;overflow-y:auto;isolation:isolate}
+.celebration-overlay{position:fixed;inset:0;z-index:5000;background:radial-gradient(ellipse at 50% 35%,rgba(35,9,49,.82),rgba(4,2,9,.975) 66%);display:grid;place-items:center;padding:24px 18px;overflow-y:auto;isolation:isolate}
 .celebration-content{position:relative;z-index:2;max-width:560px;width:100%;padding:24px 12px 18px;text-align:center;color:#fff;background:transparent;border:0;box-shadow:none;animation:celebration-appear .65s cubic-bezier(.2,1.4,.3,1) both}
 .celebration-close{position:absolute;right:0;top:0;background:#ffffff22;color:#fff;border:1px solid #ffffff25;border-radius:50%;width:38px;height:38px;display:grid;place-items:center;cursor:pointer}
 .celebration-test{display:block;color:#d9b8ec;font-size:10px;letter-spacing:.15em;margin-bottom:12px}
 .celebration-award{display:inline-flex;align-items:center;gap:9px;color:#f6d3ff;border:1px solid #b978db88;background:#431a5a66;border-radius:30px;padding:8px 14px;font-size:11px;font-weight:800;letter-spacing:.1em}
-.celebration-witch{height:245px;display:grid;place-items:center;margin:4px auto 4px;filter:drop-shadow(0 0 25px #c45dff55)}
-.celebration-witch video{height:240px;width:min(100%,360px);object-fit:contain;pointer-events:none;animation:celebration-float 3.5s ease-in-out infinite}
+.celebration-witch{height:300px;display:grid;place-items:center;margin:4px auto 4px;filter:drop-shadow(0 0 25px #c45dff55)}
+.celebration-witch video{height:295px;width:min(100%,430px);object-fit:contain;pointer-events:none;animation:celebration-float 3.5s ease-in-out infinite}
 .celebration-kicker{font-size:11px;letter-spacing:.2em;color:#e5b1ff;font-weight:800;margin:0 0 7px}
 .celebration-content h2{font-size:clamp(38px,8vw,64px);letter-spacing:.05em;line-height:1.1;color:#fff;margin:0;text-shadow:0 0 25px #d078ff}
 .celebration-message{font-size:16px;line-height:1.5;color:#f4e4fa;margin:14px auto 14px;max-width:390px}
 .celebration-score{display:grid;gap:1px;margin:0 auto;text-shadow:0 0 20px #b34fea88}
 .celebration-score strong{font-size:40px;color:#fff}.celebration-score span{font-size:11px;font-weight:800;letter-spacing:.15em;color:#e5b3f9}
 .celebration-footer{color:#dcc8e6;font-size:13px;line-height:1.6;margin:16px auto 20px;max-width:430px}
-.celebration-action{width:min(100%,350px);padding:13px 18px;border:0;border-radius:11px;color:#fff;background:linear-gradient(90deg,#8938c8,#ca63df);font-weight:800;cursor:pointer;box-shadow:0 8px 30px #9c45d044}
+.celebration-action{width:min(100%,270px);padding:13px 18px;border:0;border-radius:11px;color:#fff;background:linear-gradient(90deg,#8938c8,#ca63df);font-weight:800;cursor:pointer;box-shadow:0 8px 30px #9c45d044}
 .celebration-confetti{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
 .celebration-confetti i{position:absolute;top:-24px;left:var(--left);width:9px;height:15px;background:var(--color);border-radius:2px;opacity:.95;animation:celebration-fall var(--duration) linear var(--delay) infinite;transform:rotate(var(--rotation))}
 @keyframes celebration-fall{from{transform:translateY(-25px) rotate(0)}to{transform:translateY(110vh) rotate(820deg)}}
 @keyframes celebration-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-13px)}}
 @keyframes celebration-appear{from{opacity:0;transform:scale(.85) translateY(30px)}to{opacity:1;transform:scale(1) translateY(0)}}
-@media(max-width:520px){.celebration-content{padding:38px 4px 16px}.celebration-witch{height:180px}.celebration-witch video{height:178px}.celebration-footer{font-size:12px}}
+@media(max-width:520px){.celebration-content{padding:38px 4px 16px}.celebration-witch{height:220px}.celebration-witch video{height:215px}.celebration-footer{font-size:12px}}
 @media(prefers-reduced-motion:reduce){.celebration-confetti i,.celebration-witch video,.celebration-content{animation:none!important}.celebration-confetti{display:none}}

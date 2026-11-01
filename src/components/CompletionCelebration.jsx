@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Sparkles, Trophy, X } from "lucide-react";
 import "./CompletionCelebration.css";
 
@@ -11,6 +11,19 @@ const confetti = Array.from({ length: 72 }, (_, index) => ({
 }));
 
 export default function CompletionCelebration({ onClose, testMode = false }) {
+    const musicRef = useRef(null);
+
+    useEffect(() => {
+        const music = musicRef.current;
+        if (!music) return;
+        music.volume = 0.65;
+        // Iniciado pela interação que abre a comemoração. Alguns navegadores
+        // podem bloquear autoplay com áudio; não contornamos essa preferência.
+        const attempt = music.play();
+        if (attempt && typeof attempt.catch === "function") attempt.catch(() => {});
+        return () => { music.pause(); music.currentTime = 0; };
+    }, []);
+
     useEffect(() => {
         const onKeyDown = (event) => { if (event.key === "Escape") onClose(); };
         window.addEventListener("keydown", onKeyDown);
@@ -19,6 +32,7 @@ export default function CompletionCelebration({ onClose, testMode = false }) {
 
     return (
         <div className="celebration-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+            <audio ref={musicRef} src="/comemoracao-halloween.mp3" autoPlay loop preload="auto" />
             <div className="celebration-confetti" aria-hidden="true">
                 {confetti.map((piece, index) => <i key={index} style={{ "--left": piece.left, "--delay": piece.delay, "--duration": piece.duration, "--color": piece.color, "--rotation": piece.rotation }} />)}
             </div>
