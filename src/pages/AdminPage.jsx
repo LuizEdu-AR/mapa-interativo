@@ -12,6 +12,9 @@ export default function AdminPage() {
     const { isOwner } = useAuth();
     const [tab, setTab] = useState("points");
     const [users, setUsers] = useState([]);
+    const [administrators, setAdministrators] = useState([]);
+    const [adminsLoaded, setAdminsLoaded] = useState(false);
+    const [loadingAdmins, setLoadingAdmins] = useState(false);
     const [userSearch, setUserSearch] = useState("");
     const normalizeSearch = (value) => String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
     const visibleUsers = users.filter((item) => {
@@ -80,6 +83,17 @@ export default function AdminPage() {
         return data;
     }
 
+    useEffect(() => {
+        if (!isOwner || tab !== "users" || adminsLoaded) return;
+        let active = true;
+        setLoadingAdmins(true);
+        ownerRequest("list-admins")
+            .then((data) => { if (active) { setAdministrators(data.admins || []); setAdminsLoaded(true); } })
+            .catch((caught) => { if (active) setError(friendlyError(caught)); })
+            .finally(() => { if (active) setLoadingAdmins(false); });
+        return () => { active = false; };
+    }, [isOwner, tab, adminsLoaded]);
+
     async function loadUsers() {
         if (!isOwner) return;
         setLoadingUsers(true);
@@ -116,6 +130,11 @@ export default function AdminPage() {
             await ownerRequest("role", uid, role);
             setMessage("Permissões atualizadas. O usuário deve entrar novamente para atualizar o acesso.");
             setUsers((previous) => previous.map((item) => item.uid === uid ? { ...item, role } : item));
+            setAdministrators((previous) => role === "player"
+                ? previous.filter((item) => item.uid !== uid)
+                : previous.some((item) => item.uid === uid)
+                    ? previous.map((item) => item.uid === uid ? { ...item, role } : item)
+                    : [...previous, { ...(users.find((item) => item.uid === uid) || { uid, name: "Administrador", playerId: "?" }), role }]);
         } catch (caught) { setError(friendlyError(caught)); }
         finally { setRoleBusy(""); }
     }
@@ -333,6 +352,11 @@ export default function AdminPage() {
                 })}
             </div>
             </> : <section className="panel"><div className="section-header"><div><h2>Gerenciar usuários e administradores</h2><p className="muted">Consulte um jogador pelo ID. Não carregamos a lista inteira de usuários.</p></div></div>
+                <div className="section-header" style={{ marginTop: "1.25rem" }}><div><h3>Administradores do sistema</h3><p className="muted">Somente administradores e proprietário. Carregamento único ao abrir esta aba.</p></div></div>
+                {loadingAdmins && <p className="muted">Carregando administradores...</p>}
+                {!loadingAdmins && adminsLoaded && (administrators.length === 0 ? <p className="muted">Nenhum administrador encontrado.</p> :
+                    <div className="admin-table-scroll"><table className="admin-table"><thead><tr><th>Nome</th><th>ID</th><th>Permissão</th><th>Ação</th></tr></thead><tbody>{administrators.map((item) => <tr key={item.uid}><td>{item.name}</td><td>#{item.playerId}</td><td>{item.role === "owner" ? "Proprietário" : "Administrador"}</td><td>{item.role === "owner" ? "Protegido" : <button className="button secondary" type="button" disabled={Boolean(roleBusy)} onClick={() => changeRole(item.uid, "player")}>{roleBusy === item.uid ? "Salvando..." : "Remover admin"}</button>}</td></tr>)}</tbody></table></div>)}
+                <div className="section-header" style={{ marginTop: "1.5rem" }}><div><h3>Consultar jogador</h3><p className="muted">Pesquise individualmente pelo ID para promover, remover ou redefinir a senha.</p></div></div>
                 <form className="user-search-row" onSubmit={(event) => { event.preventDefault(); loadUsers(); }}>
                     <label className="visually-hidden" htmlFor="user-search">ID do jogador</label>
                     <input id="user-search" type="text" inputMode="numeric" placeholder="Digite o ID do jogador" value={userSearch} onChange={(event) => { setUserSearch(event.target.value); setUsers([]); setNewPassword(null); }} autoComplete="off" />

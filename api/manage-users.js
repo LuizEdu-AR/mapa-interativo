@@ -10,6 +10,17 @@ export default async function handler(req, res) {
         if (!actor || actor.role !== "owner") return res.status(403).json({ error: "Apenas o proprietário pode gerenciar usuários." });
         const { action, uid, role } = req.body || {};
         const store = admin.firestore();
+        if (action === "list-admins") {
+            // Consulta apenas perfis administrativos; não percorre a coleção inteira.
+            const found = await store.collection("users").where("role", "in", ["admin", "owner"]).get();
+            const admins = found.docs.map((entry) => ({
+                uid: entry.id,
+                playerId: entry.data().playerId,
+                name: entry.data().name || "Sem nome",
+                role: entry.data().role
+            })).sort((a, b) => (a.role === "owner" ? -1 : 0) - (b.role === "owner" ? -1 : 0) || String(a.name).localeCompare(String(b.name), "pt-BR"));
+            return res.status(200).json({ admins });
+        }
         if (action === "lookup") {
             const playerId = String(req.body?.playerId || '').trim();
             if (!/^[0-9]{1,12}$/.test(playerId)) return res.status(400).json({ error: 'Informe um ID válido.' });
