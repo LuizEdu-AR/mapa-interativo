@@ -22,11 +22,13 @@ export default function CompletionCelebration({ onClose, testMode = false }) {
             <div className="celebration-confetti" aria-hidden="true">
                 {confetti.map((piece, index) => <i key={index} style={{ "--left": piece.left, "--delay": piece.delay, "--duration": piece.duration, "--color": piece.color, "--rotation": piece.rotation }} />)}
             </div>
-            <section className="celebration-panel" role="dialog" aria-modal="true" aria-labelledby="celebration-title">
+            <section className="celebration-content" role="dialog" aria-modal="true" aria-labelledby="celebration-title">
                 <button type="button" className="celebration-close" onClick={onClose} aria-label="Fechar comemoração"><X size={22} /></button>
                 {testMode && <span className="celebration-test">PRÉVIA EXCLUSIVA DO ID 194</span>}
                 <div className="celebration-award"><Trophy size={17} /> CONQUISTA LENDÁRIA <Sparkles size={17} /></div>
-                <div className="celebration-witch" aria-hidden="true"><img src="/bruxinha.png" alt="" /></div>
+                <div className="celebration-witch" aria-hidden="true">
+                    <video src="/bruxinha_coleta.webm" autoPlay muted loop playsInline preload="metadata" disablePictureInPicture />
+                </div>
                 <p className="celebration-kicker">A CAÇADA FOI CONCLUÍDA!</p>
                 <h2 id="celebration-title">PARABÉNS!</h2>
                 <p className="celebration-message">Você encontrou todas as <strong>100 bruxinhas</strong> espalhadas pela cidade!</p>
