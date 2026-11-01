@@ -113,7 +113,8 @@ service cloud.firestore {
     function isValidProgress() {
       return request.resource.data.keys().hasOnly([
           'completedIds',
-          'version'
+          'version',
+          'celebrationShown'
         ])
         && request.resource.data.keys().hasAll([
           'completedIds',
@@ -121,7 +122,9 @@ service cloud.firestore {
         ])
         && request.resource.data.version == 1
         && request.resource.data.completedIds is list
-        && request.resource.data.completedIds.size() <= 100;
+        && request.resource.data.completedIds.size() <= 100
+        && (!('celebrationShown' in request.resource.data)
+          || request.resource.data.celebrationShown is bool);
     }
 
     // ==========================================
@@ -153,8 +156,17 @@ service cloud.firestore {
         allow update: if isOwnProfile(userId)
           && progressId == 'summary'
           && isValidProgress()
-          && request.resource.data.diff(resource.data)
-            .affectedKeys().hasOnly(['completedIds']);
+          && (
+            request.resource.data.diff(resource.data)
+              .affectedKeys().hasOnly(['completedIds'])
+            || (
+              request.resource.data.diff(resource.data)
+                .affectedKeys().hasOnly(['celebrationShown'])
+              && resource.data.get('celebrationShown', false) == false
+              && request.resource.data.celebrationShown == true
+              && request.resource.data.completedIds.size() == 100
+            )
+          );
 
         allow delete: if false;
       }

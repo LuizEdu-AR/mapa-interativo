@@ -1,18 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Filter, MapPin, Plus, X } from "lucide-react";
 import GameMap from "../components/Map/GameMap";
 import CompletionCelebration from "../components/CompletionCelebration";
 import { useAuth } from "../contexts/AuthContext";
 import { subscribeWitches } from "../services/witchService";
-import { subscribeProgress, toggleCompleted } from "../services/progressService";
+import { claimCompletionCelebration, subscribeProgress, toggleCompleted } from "../services/progressService";
 import { Link } from "react-router-dom";
 
 const labels = { easy: "Fácil", medium: "Médio", hard: "Difícil" };
 
 export default function MapPage() {
-    const { user, isAdmin, isOwner, profile } = useAuth();
-    const [showCelebrationPreview, setShowCelebrationPreview] = useState(false);
-    const canTestCelebration = isOwner && String(profile?.playerId) === "194";
+    const { user, isAdmin } = useAuth();
+    const [showCelebration, setShowCelebration] = useState(false);
+    const celebrationAttempted = useRef(new Set());
     const [witches, setWitches] = useState([]);
     const [completed, setCompleted] = useState(new Set());
     const [progressReady, setProgressReady] = useState(false);
@@ -46,6 +46,21 @@ export default function MapPage() {
     const count = witches.filter((witch) => completed.has(witch.id)).length;
     const active = visibleWitches.find((witch) => witch.id === selected);
 
+    useEffect(() => {
+        // Só verificar após o progresso e o catálogo completo estarem disponíveis.
+        // Nenhuma leitura por bruxinha; a transação consulta somente progress/summary.
+        if (!user?.uid || !progressReady || witches.length !== 100 || count !== 100) return;
+        if (celebrationAttempted.current.has(user.uid)) return;
+        celebrationAttempted.current.add(user.uid);
+        claimCompletionCelebration(user.uid)
+            .then((claimed) => { if (claimed) setShowCelebration(true); })
+            .catch(() => {
+                // Em caso de erro, permitir nova tentativa sem perder o direito à comemoração.
+                celebrationAttempted.current.delete(user.uid);
+            });
+    }, [user?.uid, progressReady, witches.length, count]);
+
+
     async function handleToggle() {
         if (!active || !user || !progressReady) return;
         setBusy(true);
@@ -66,7 +81,6 @@ export default function MapPage() {
                 <h1>Caça às Bruxinhas</h1>
                 <p>100 bruxinhas estão escondidas pela cidade. Explore o mapa, encontre cada uma e acompanhe sua coleção!</p>
                 <div className="progress-label"><strong>{count}</strong> de 100 coletadas</div>
-                {canTestCelebration && <button type="button" className="button secondary" style={{ marginTop: 12, alignSelf: "flex-start" }} onClick={() => setShowCelebrationPreview(true)}>Testar comemoração (ID 194)</button>}
                 <div className="progress-track"><div style={{ width: `${Math.min(100, count)}%` }} /></div>
                 <small>Restam {Math.max(0, 100 - count)} bruxinhas para completar sua coleção</small>
                 </div><div className="hero-witch" aria-label="Bruxinha do evento de Halloween girando na vassoura" role="img">
@@ -126,7 +140,7 @@ export default function MapPage() {
                     </aside>
                 </div>
             </section>
-            {showCelebrationPreview && canTestCelebration && <CompletionCelebration testMode onClose={() => setShowCelebrationPreview(false)} />}
+            {showCelebration && <CompletionCelebration onClose={() => setShowCelebration(false)} />}
             {active && (
                 <div className="modal-backdrop" onClick={() => setSelected(null)}>
                     <section className="modal" role="dialog" aria-modal="true" aria-label="Detalhes da bruxinha" onClick={(event) => event.stopPropagation()}>

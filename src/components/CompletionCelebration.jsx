@@ -10,7 +10,7 @@ const confetti = Array.from({ length: 72 }, (_, index) => ({
     rotation: `${(index * 71) % 360}deg`
 }));
 
-export default function CompletionCelebration({ onClose, testMode = false }) {
+export default function CompletionCelebration({ onClose }) {
     const musicRef = useRef(null);
 
     useEffect(() => {
@@ -38,7 +38,6 @@ export default function CompletionCelebration({ onClose, testMode = false }) {
             </div>
             <section className="celebration-content" role="dialog" aria-modal="true" aria-labelledby="celebration-title">
                 <button type="button" className="celebration-close" onClick={onClose} aria-label="Fechar comemoração"><X size={22} /></button>
-                {testMode && <span className="celebration-test">PRÉVIA EXCLUSIVA DO ID 194</span>}
                 <div className="celebration-award"><Trophy size={17} /> CONQUISTA LENDÁRIA <Sparkles size={17} /></div>
                 <div className="celebration-witch" aria-hidden="true">
                     <video src="/bruxinha_coleta.webm" autoPlay muted loop playsInline preload="metadata" disablePictureInPicture />

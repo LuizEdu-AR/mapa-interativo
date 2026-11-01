@@ -56,3 +56,18 @@ export async function toggleCompleted(uid, witchId, completed) {
         transaction.update(reference, { completedIds: [...ids].sort() });
     });
 }
+
+// Reutiliza o documento consolidado; a transação garante uma única concessão
+// mesmo com várias abas ou dispositivos acessando simultaneamente.
+export async function claimCompletionCelebration(uid) {
+    await ensureSummary(uid);
+    const reference = summaryRef(uid);
+    return runTransaction(db, async (transaction) => {
+        const snapshot = await transaction.get(reference);
+        if (!snapshot.exists()) return false;
+        const data = snapshot.data();
+        if (data.celebrationShown === true || cleanIds(data.completedIds).length !== 100) return false;
+        transaction.update(reference, { celebrationShown: true });
+        return true;
+    });
+}
