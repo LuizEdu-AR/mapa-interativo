@@ -31,11 +31,16 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'private, no-store');
   if (!['GET', 'POST'].includes(req.method)) return res.status(405).json({ error: 'Método não permitido.' });
   try {
-    if (process.env.VITE_MAINTENANCE_MODE !== 'false') return res.status(503).json({ error: 'Site em manutenção.' });
+    const closed = process.env.VITE_EVENT_MODE !== 'active';
+    if (!closed && process.env.VITE_MAINTENANCE_MODE !== 'false') return res.status(503).json({ error: 'Site em manutenção.' });
     initialize();
-    const token = /^Bearer (.+)$/.exec(req.headers.authorization || '')?.[1];
-    if (!token) return res.status(401).json({ error: 'Autenticação necessária.' });
-    const user = await admin.auth().verifyIdToken(token);
+    let user = null;
+    if (req.method === 'POST' && closed) return res.status(403).json({ error: 'Evento encerrado.' });
+    if (!closed || req.method === 'POST') {
+      const token = /^Bearer (.+)$/.exec(req.headers.authorization || '')?.[1];
+      if (!token) return res.status(401).json({ error: 'Autenticação necessária.' });
+      user = await admin.auth().verifyIdToken(token);
+    }
 
     if (req.method === 'POST') {
       if (!['admin', 'owner'].includes(user.role)) return res.status(403).json({ error: 'Permissão insuficiente.' });
@@ -51,6 +56,9 @@ export default async function handler(req, res) {
       cachedAt = Date.now();
       return res.status(200).json({ points: cache });
     }
+
+    // Durante o encerramento, não fazer varredura da coleção de 100 pontos.
+    if (closed) return res.status(503).json({ error: 'Catálogo histórico ainda não disponível.' });
 
     // Migração automática: se o documento consolidado ainda não existe, cria-o.
     // Em instâncias distintas, no máximo a primeira consulta de cada uma pode

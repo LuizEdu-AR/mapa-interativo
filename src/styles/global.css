@@ -307,3 +307,33 @@ input, select { padding: 10px 12px; font-size: 12px; }
 /* Aviso de realocação, sem novas consultas ao Firestore. */
 .island-notice { border: 1px solid rgba(195, 139, 235, .35); background: #21112e; color: #f3e8fc; }
 .island-notice p { margin: 7px 0 0; line-height: 1.55; }
+
+/* Modo entre eventos: portal e mapa público, sem carregar Firebase Auth no navegador. */
+.event-closed{position:relative;min-height:100dvh;display:grid;place-items:center;overflow:hidden;background:radial-gradient(ellipse at 50% 30%,#3b1854 0%,#1c0e2a 37%,#0b0710 85%);color:#fff;padding:36px 18px;text-align:center}
+.event-closed-glow{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 33%,#b45af022,transparent 45%)}
+.event-closed-content{position:relative;width:min(680px,100%);display:flex;align-items:center;flex-direction:column;gap:15px}
+.event-closed-kicker{font-size:11px;letter-spacing:.24em;color:#d6b1ed;font-weight:800}
+.event-closed-witch{width:min(280px,65vw);height:240px;object-fit:contain;filter:drop-shadow(0 0 28px #a63bdf80)}
+.event-closed-pill{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border:1px solid #8c55a5;border-radius:40px;background:#4c286855;color:#f3d6ff;font-size:11px;letter-spacing:.12em;font-weight:800}
+.event-closed h1{font-family:Georgia,serif;font-size:clamp(33px,5.5vw,62px);line-height:1.1;margin:2px 0 0;color:#fff}
+.event-closed h1 em{font-style:normal;color:#d99cff}
+.event-closed p{font-size:15px;line-height:1.65;color:#e6d3ef;max-width:560px;margin:0}
+.event-closed .event-closed-next{color:#dba4ff;font-weight:700}
+.event-closed-map-link{display:inline-flex;justify-content:center;align-items:center;gap:10px;background:linear-gradient(105deg,#8132b6,#bf55df);padding:15px 25px;border-radius:11px;color:#fff;text-decoration:none;font-weight:800;margin-top:7px;box-shadow:0 8px 28px #6d268c66;transition:transform .2s}
+.event-closed-map-link:hover{transform:translateY(-2px)}
+.event-closed-hint{font-size:12px;color:#b69bc7}
+.event-closed-partners{width:100%;border-top:1px solid #a76cc433;margin-top:16px;padding-top:22px;display:flex;flex-direction:column;align-items:center;gap:15px}
+.event-closed-partners>span{font-size:11px;letter-spacing:.22em;color:#c8a6db;font-weight:800}
+.event-closed-partners>div{display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap}
+.event-closed-partners img{max-width:145px;max-height:64px;object-fit:contain}
+.public-map-page{min-height:100dvh;background:#100b17;color:#f8efff}
+.public-map-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px clamp(16px,4vw,60px);border-bottom:1px solid #473051;background:#170e21}
+.public-map-header>span{font-size:11px;letter-spacing:.14em;color:#bca1cd}
+.public-back{display:flex;align-items:center;gap:8px;color:#ead5ff;text-decoration:none;font-size:13px;font-weight:700}
+.public-map-body{width:min(1450px,100%);margin:auto;padding:28px clamp(14px,3vw,40px)}
+.public-map-title{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:24px}
+.public-map-title h1{font-family:Georgia,serif;font-size:clamp(27px,3vw,42px);margin:8px 0}
+.public-map-title p{color:#c9b5d6;line-height:1.5}
+.public-map-readonly{white-space:nowrap;border:1px solid #78538d;color:#e5c5f6;padding:10px 14px;border-radius:30px;font-size:12px}
+.public-map-note{color:#d6b5e6;margin-top:20px;font-size:13px}
+@media(max-width:650px){.event-closed{padding:24px 15px}.event-closed-witch{height:190px}.event-closed-partners>div{gap:22px}.event-closed-partners img{max-width:115px;max-height:52px}.public-map-title{align-items:flex-start;flex-direction:column}.public-map-header>span{display:none}}
